@@ -221,6 +221,7 @@
         <div class="lock-emblem">🔒</div>
         <h2 id="lockTitle">Archivo protegido</h2>
         <p class="lock-sub" id="lockSub">Escribe tu PIN</p>
+        <button class="btn btn-primary" id="faceBtn" hidden style="max-width:240px;margin-bottom:4px">🙂 Entrar con Face ID</button>
         <div class="pin-dots" id="pinDots"><i></i><i></i><i></i><i></i></div>
         <p class="lock-msg" id="lockMsg"></p>
         <div class="keypad" id="keypad">
@@ -236,6 +237,10 @@
           <button type="button" data-k="bio" id="kpBio" aria-label="Face ID">☺</button>
           <button type="button" data-k="0">0</button>
           <button type="button" data-k="del" aria-label="Borrar">⌫</button>
+        </div>
+        <div id="donePanel" hidden style="display:flex;flex-direction:column;gap:8px;font-size:16px;font-weight:700;color:var(--teal);margin-top:6px">
+          <div>✓ Código PIN — LISTO</div>
+          <div id="doneF">✓ Face ID — LISTO</div>
         </div>
         <div id="bioSetup" hidden style="display:flex;flex-direction:column;gap:10px;width:220px;margin-top:8px">
           <button class="btn btn-primary" id="bioEnrollBtn">Activar Face ID</button>
@@ -423,11 +428,17 @@
   function drawDots(){ const d=$('pinDots').children; for(let i=0;i<4;i++) d[i].classList.toggle('on', i<entry.length); }
   function showLock(){
     unlocked=false; $('lockScreen').hidden=false; $('archiveBody').hidden=true;
-    entry=''; firstPin=''; $('lockMsg').textContent=''; $('bioSetup').hidden=true; $('keypad').hidden=false;
+    entry=''; firstPin='';
+    $('lockMsg').textContent=''; $('bioSetup').hidden=true; $('donePanel').hidden=true;
+    $('keypad').hidden=false; $('pinDots').hidden=false; $('faceBtn').hidden=true;
     if(hasPin()){ lockMode='login'; $('lockTitle').textContent='Archivo protegido'; $('lockSub').textContent='Escribe tu PIN'; $('resetWrap').hidden=false; }
     else { lockMode='setup1'; $('lockTitle').textContent='Protege tus archivos'; $('lockSub').textContent='Crea un PIN de 4 números'; $('resetWrap').hidden=true; }
-    (async()=>{ const ok = !!localStorage.getItem(BIO_KEY) && await bioAvailable(); $('kpBio').style.visibility = ok?'visible':'hidden'; })();
     drawDots();
+    (async()=>{
+      const ok = hasPin() && !!localStorage.getItem(BIO_KEY) && await bioAvailable();
+      $('kpBio').style.visibility = ok?'visible':'hidden';
+      if(ok){ $('faceBtn').hidden=false; $('lockSub').textContent='Usa Face ID o tu PIN'; }
+    })();
   }
   function doUnlock(){
     unlocked=true; $('lockScreen').hidden=true; $('archiveBody').hidden=false;
@@ -450,11 +461,18 @@
     entry+=k; drawDots();
     if(entry.length===4) setTimeout(lockSubmit,150);
   }
-  function offerBio(){ (async()=>{ if(await bioAvailable()){ $('keypad').hidden=true; $('lockTitle').textContent='Casi listo'; $('lockSub').textContent='¿Usar Face ID la próxima vez?'; $('bioSetup').hidden=false; } else doUnlock(); })(); }
-  async function tryBio(){ try{ if(await bioUnlock()) doUnlock(); else $('lockMsg').textContent='No se reconoció. Usa tu PIN.'; }catch(e){ $('lockMsg').textContent='Usa tu PIN.'; } }
+  function offerBio(){ (async()=>{ if(await bioAvailable()){ $('keypad').hidden=true; $('pinDots').hidden=true; $('lockTitle').textContent='Casi listo'; $('lockSub').textContent='¿Activar Face ID para la próxima vez?'; $('bioSetup').hidden=false; } else showDone(false); })(); }
+  function showDone(faceOn){
+    $('keypad').hidden=true; $('pinDots').hidden=true; $('bioSetup').hidden=true; $('faceBtn').hidden=true; $('resetWrap').hidden=true;
+    $('lockTitle').textContent='¡Listo!'; $('lockSub').textContent='Ya puedes entrar a tus archivos';
+    $('doneF').hidden = !faceOn; $('donePanel').hidden=false;
+    setTimeout(()=> doUnlock(), 1400);
+  }
+  async function tryBio(){ $('lockSub').textContent='Leyendo tu cara…'; try{ if(await bioUnlock()) doUnlock(); else $('lockSub').textContent='Usa Face ID o tu PIN'; }catch(e){ $('lockSub').textContent='Usa Face ID o tu PIN'; } }
   document.querySelectorAll('#keypad button').forEach(b=> b.onclick=()=> lockPress(b.dataset.k));
-  $('bioEnrollBtn').onclick = async ()=>{ try{ await bioEnroll(); }catch(e){} doUnlock(); };
-  $('bioSkipBtn').onclick = ()=> doUnlock();
+  $('faceBtn').onclick = ()=> tryBio();
+  $('bioEnrollBtn').onclick = async ()=>{ let ok=false; try{ await bioEnroll(); ok=true; }catch(e){} showDone(ok); };
+  $('bioSkipBtn').onclick = ()=> showDone(false);
   $('resetBtn').onclick = ()=>{ if(confirm('¿Restablecer el bloqueo? Podrás crear un PIN nuevo. Tus documentos NO se borran.')){ localStorage.removeItem(PIN_KEY); localStorage.removeItem(BIO_KEY); showLock(); } };
   $('relockBtn').onclick = ()=> showLock();
 
