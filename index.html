@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0e7c6b">
+<title>Carmen Elena Organiza</title>
+<style>
+  /* ---- Design tokens ---- */
+  :root{
+    --sand:#fbf7f0;        /* warm ground */
+    --sand-2:#f3ece0;      /* card / raised */
+    --line:#e6dccb;        /* hairline */
+    --ink:#2a2622;         /* warm near-black */
+    --ink-soft:#6f665b;    /* muted warm grey */
+    --teal:#0e7c6b;        /* primary — "organiza" calm */
+    --teal-deep:#0b5f52;
+    --coral:#e8843c;       /* action — the camera */
+    --coral-deep:#cf6f2b;
+    --good:#2f8f5b;
+    --danger:#c0492f;
+    --shadow:0 6px 22px rgba(42,38,34,.10);
+    --shadow-lift:0 10px 30px rgba(42,38,34,.16);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --sand:#181512; --sand-2:#221e19; --line:#332c24;
+      --ink:#f3ece0; --ink-soft:#b3a897;
+      --teal:#2bb39c; --teal-deep:#1e8f7c;
+      --coral:#f0975a; --coral-deep:#d97e3f;
+      --shadow:0 6px 22px rgba(0,0,0,.35);
+      --shadow-lift:0 10px 30px rgba(0,0,0,.5);
+    }
+  }
+  :root[data-theme="light"]{
+    --sand:#fbf7f0; --sand-2:#f3ece0; --line:#e6dccb;
+    --ink:#2a2622; --ink-soft:#6f665b;
+    --teal:#0e7c6b; --teal-deep:#0b5f52; --coral:#e8843c; --coral-deep:#cf6f2b;
+    --shadow:0 6px 22px rgba(42,38,34,.10); --shadow-lift:0 10px 30px rgba(42,38,34,.16);
+  }
+  :root[data-theme="dark"]{
+    --sand:#181512; --sand-2:#221e19; --line:#332c24;
+    --ink:#f3ece0; --ink-soft:#b3a897;
+    --teal:#2bb39c; --teal-deep:#1e8f7c; --coral:#f0975a; --coral-deep:#d97e3f;
+    --shadow:0 6px 22px rgba(0,0,0,.35); --shadow-lift:0 10px 30px rgba(0,0,0,.5);
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--sand);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    line-height:1.5;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .wrap{max-width:480px;margin:0 auto;min-height:100%;display:flex;flex-direction:column}
+
+  /* ---- Header ---- */
+  header{
+    padding:26px 22px 18px;
+    padding-top:calc(26px + env(safe-area-inset-top));
+    text-align:center;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,var(--sand-2),var(--sand));
+  }
+  .mark{
+    width:52px;height:52px;margin:0 auto 12px;border-radius:16px;
+    background:var(--teal);color:#fff;
+    display:grid;place-items:center;
+    font-family:Georgia,"Times New Roman",serif;font-size:26px;font-weight:700;
+    box-shadow:var(--shadow);
+  }
+  h1{
+    font-family:Georgia,"Times New Roman",serif;
+    font-size:26px;font-weight:700;letter-spacing:.2px;line-height:1.15;
+    text-wrap:balance;
+  }
+  h1 .accent{color:var(--teal)}
+  .tagline{margin-top:5px;color:var(--ink-soft);font-size:14.5px}
+
+  /* ---- Scroll body ---- */
+  main{flex:1;padding:20px 18px 8px;display:flex;flex-direction:column;gap:20px}
+
+  /* ---- Big scan button ---- */
+  .scan{
+    appearance:none;border:none;cursor:pointer;width:100%;
+    background:var(--coral);color:#fff;
+    border-radius:20px;padding:20px 18px;
+    font-size:19px;font-weight:650;
+    display:flex;align-items:center;justify-content:center;gap:12px;
+    box-shadow:var(--shadow-lift);
+    transition:transform .12s ease, background .15s ease;
+  }
+  .scan:hover{background:var(--coral-deep)}
+  .scan:active{transform:scale(.975)}
+  .scan svg{width:26px;height:26px}
+  .scan small{display:block;font-weight:450;font-size:13px;opacity:.9;margin-top:2px}
+
+  /* ---- Section head ---- */
+  .sec-head{display:flex;align-items:baseline;justify-content:space-between;padding:0 2px}
+  .sec-head h2{font-size:17px;font-weight:700}
+  .count{font-size:13px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+
+  /* ---- Search + filter ---- */
+  .search{
+    width:100%;font-size:15px;padding:12px 14px;border-radius:13px;margin:12px 0 10px;
+    border:1.5px solid var(--line);background:var(--sand-2);color:var(--ink);font-family:inherit;
+  }
+  .search:focus{outline:none;border-color:var(--teal)}
+  .chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 4px;-webkit-overflow-scrolling:touch}
+  .chip{
+    flex:none;appearance:none;cursor:pointer;white-space:nowrap;
+    border:1.5px solid var(--line);background:var(--sand-2);color:var(--ink-soft);
+    padding:8px 13px;border-radius:100px;font-size:13.5px;font-weight:600;font-family:inherit;
+    transition:all .12s ease;
+  }
+  .chip.active{background:var(--teal);border-color:var(--teal);color:#fff}
+  #dCats{flex-wrap:wrap;overflow:visible;margin-bottom:8px}
+  .cat-pill{
+    display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:100px;
+    background:var(--line);color:var(--ink-soft);margin-top:5px;letter-spacing:.2px;
+  }
+  .details{margin-top:16px;text-align:left;display:flex;flex-direction:column;gap:2px}
+  .details input[type=text],.details input[type=date],.details textarea{
+    width:100%;font-size:15px;padding:11px 13px;border-radius:11px;margin-bottom:8px;
+    border:1.5px solid var(--line);background:var(--sand);color:var(--ink);font-family:inherit;
+  }
+  .details textarea{min-height:60px;resize:vertical}
+  .details input:focus,.details textarea:focus{outline:none;border-color:var(--teal)}
+  .hint{font-size:12.5px;color:var(--ink-soft);background:var(--sand-2);border-radius:10px;padding:10px 12px;margin-top:6px;line-height:1.5}
+
+  /* ---- Doc list ---- */
+  .list{display:flex;flex-direction:column;gap:12px;margin-top:8px}
+  .card{
+    display:flex;align-items:center;gap:14px;
+    background:var(--sand-2);border:1px solid var(--line);
+    border-radius:16px;padding:12px;cursor:pointer;
+    box-shadow:var(--shadow);
+    transition:transform .1s ease;
+  }
+  .card:active{transform:scale(.99)}
+  .thumb{
+    width:58px;height:58px;flex:none;border-radius:12px;object-fit:cover;
+    background:var(--line);border:1px solid var(--line);
+  }
+  .card-body{flex:1;min-width:0}
+  .card-title{font-weight:620;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card-date{font-size:13px;color:var(--ink-soft);margin-top:2px}
+  .chev{color:var(--ink-soft);flex:none}
+
+  /* ---- Empty state ---- */
+  .empty{
+    text-align:center;padding:34px 20px;color:var(--ink-soft);
+    border:2px dashed var(--line);border-radius:18px;
+  }
+  .empty .big{font-size:40px;margin-bottom:8px}
+  .empty p{font-size:15px;max-width:22ch;margin:0 auto}
+
+  /* ---- Trust card ---- */
+  .trust{
+    margin:8px 0 22px;background:var(--sand-2);border:1px solid var(--line);
+    border-radius:16px;padding:16px 18px;
+  }
+  .trust h3{font-size:14px;display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .trust p{font-size:13px;color:var(--ink-soft);line-height:1.55}
+  .lock{color:var(--teal)}
+
+  /* ---- Overlays ---- */
+  .overlay{
+    position:fixed;inset:0;z-index:40;display:none;
+    background:rgba(20,17,14,.55);backdrop-filter:blur(3px);
+    align-items:flex-end;justify-content:center;
+  }
+  .overlay.show{display:flex;animation:fade .2s ease}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .sheet{
+    width:100%;max-width:480px;background:var(--sand);
+    border-radius:24px 24px 0 0;padding:22px 20px calc(24px + env(safe-area-inset-bottom));
+    box-shadow:0 -10px 40px rgba(0,0,0,.3);
+    animation:rise .28s cubic-bezier(.2,.8,.25,1);
+  }
+  @keyframes rise{from{transform:translateY(40px)}to{transform:translateY(0)}}
+  .sheet h2{font-family:Georgia,serif;font-size:21px;margin-bottom:4px;text-align:center}
+  .sheet .sub{text-align:center;color:var(--ink-soft);font-size:14px;margin-bottom:16px}
+  .preview-img{
+    width:100%;max-height:230px;object-fit:contain;border-radius:14px;
+    background:var(--sand-2);border:1px solid var(--line);margin-bottom:16px;
+  }
+  label.fld{display:block;font-size:13px;font-weight:600;color:var(--ink-soft);margin:0 2px 6px}
+  input[type=text]{
+    width:100%;font-size:17px;padding:14px 15px;border-radius:13px;
+    border:1.5px solid var(--line);background:var(--sand);color:var(--ink);
+    font-family:inherit;
+  }
+  input[type=text]:focus{outline:none;border-color:var(--teal)}
+  .btn-row{display:flex;gap:10px;margin-top:18px}
+  .btn{
+    flex:1;appearance:none;border:none;cursor:pointer;
+    padding:15px;border-radius:14px;font-size:16px;font-weight:640;font-family:inherit;
+    transition:transform .1s ease,background .15s;
+  }
+  .btn:active{transform:scale(.98)}
+  .btn-primary{background:var(--teal);color:#fff}
+  .btn-primary:hover{background:var(--teal-deep)}
+  .btn-ghost{background:transparent;color:var(--ink-soft);border:1.5px solid var(--line)}
+
+  /* ---- Viewer ---- */
+  #viewer .sheet{text-align:center}
+  #viewer img{width:100%;max-height:60vh;object-fit:contain;border-radius:14px;background:var(--sand-2);border:1px solid var(--line)}
+  .view-meta{margin:14px 2px 4px}
+  .view-meta .t{font-family:Georgia,serif;font-size:20px}
+  .view-meta .d{color:var(--ink-soft);font-size:13px;margin-top:3px}
+  .del{background:transparent;border:none;color:var(--danger);font-size:15px;font-weight:600;cursor:pointer;padding:12px;margin-top:6px}
+
+  /* ---- Toast ---- */
+  .toast{
+    position:fixed;left:50%;bottom:calc(28px + env(safe-area-inset-bottom));
+    transform:translateX(-50%) translateY(20px);
+    background:var(--good);color:#fff;font-weight:600;font-size:15px;
+    padding:13px 22px;border-radius:100px;box-shadow:var(--shadow-lift);
+    z-index:60;opacity:0;pointer-events:none;transition:all .3s ease;
+    display:flex;align-items:center;gap:9px;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="mark">CE</div>
+    <h1>Carmen Elena <span class="accent">Organiza</span></h1>
+    <p class="tagline">Tus documentos, ordenados y seguros</p>
+  </header>
+
+  <main>
+    <button class="scan" id="scanBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+        <circle cx="12" cy="13" r="4"></circle>
+      </svg>
+      <span>Escanear documento<small>Toma una foto y guárdala</small></span>
+    </button>
+    <input type="file" id="fileInput" accept="image/*" capture="environment" hidden>
+
+    <section>
+      <div class="sec-head">
+        <h2>Mis documentos</h2>
+        <span class="count" id="count">0 guardados</span>
+      </div>
+      <input type="search" id="search" class="search" placeholder="Buscar por nombre, remitente o tema…">
+      <div class="chips" id="chips">
+        <button class="chip active" data-cat="Todos">Todos</button>
+        <button class="chip" data-cat="Dinero">💶 Dinero</button>
+        <button class="chip" data-cat="Médico">🩺 Médico</button>
+        <button class="chip" data-cat="ID">🪪 Identificación</button>
+        <button class="chip" data-cat="Hogar">🏠 Hogar</button>
+        <button class="chip" data-cat="Otro">📌 Otro</button>
+      </div>
+      <div class="list" id="list"></div>
+    </section>
+
+    <div class="trust">
+      <h3><span class="lock">🔒</span> Tu privacidad</h3>
+      <p>Sin cuentas, sin registro, sin correo. Tus documentos se guardan solo en tu teléfono — nunca se envían a ningún lado. Gratis y funciona sin internet.</p>
+    </div>
+  </main>
+</div>
+
+<!-- Naming sheet -->
+<div class="overlay" id="naming">
+  <div class="sheet">
+    <h2>Ponle un nombre</h2>
+    <p class="sub">Así lo encontrarás fácil después</p>
+    <img class="preview-img" id="previewImg" alt="Vista previa">
+    <label class="fld" for="titleInput">Nombre del documento</label>
+    <input type="text" id="titleInput" placeholder="Ej: Recibo de luz — agosto" autocomplete="off">
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="retakeBtn">Volver a tomar</button>
+      <button class="btn btn-primary" id="saveBtn">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Viewer sheet -->
+<div class="overlay" id="viewer">
+  <div class="sheet">
+    <img id="viewImg" alt="">
+    <div class="view-meta">
+      <div class="t" id="viewTitle"></div>
+      <div class="d" id="viewDate"></div>
+    </div>
+    <div class="details">
+      <label class="fld">Fecha del documento</label>
+      <input type="date" id="dDate">
+      <label class="fld">¿Quién lo envía? (remitente)</label>
+      <input type="text" id="dSender" placeholder="Ej: CFE, Dr. Ruiz, Banco…" autocomplete="off">
+      <label class="fld">¿De qué trata? (asunto)</label>
+      <input type="text" id="dSubject" placeholder="Ej: Recibo de luz de agosto" autocomplete="off">
+      <label class="fld">Categoría</label>
+      <div class="chips" id="dCats">
+        <button type="button" class="chip" data-cat="Dinero">💶 Dinero</button>
+        <button type="button" class="chip" data-cat="Médico">🩺 Médico</button>
+        <button type="button" class="chip" data-cat="ID">🪪 Identificación</button>
+        <button type="button" class="chip" data-cat="Hogar">🏠 Hogar</button>
+        <button type="button" class="chip" data-cat="Otro">📌 Otro</button>
+      </div>
+      <label class="fld">Notas / contenido</label>
+      <textarea id="dContent" placeholder="Cualquier detalle que quieras recordar…"></textarea>
+      <p class="hint">💡 En la app de iPhone, tu teléfono lee el documento y llena la fecha, el remitente y el asunto por ti — sin enviar nada a ningún lado.</p>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="closeViewBtn">Cerrar</button>
+      <button class="btn btn-primary" id="saveDetailsBtn">Guardar cambios</button>
+    </div>
+    <div class="btn-row" style="margin-top:10px">
+      <button class="btn btn-ghost" id="pdfBtn">📄 Guardar como PDF</button>
+    </div>
+    <button class="del" id="delBtn">Eliminar documento</button>
+  </div>
+</div>
+
+<div class="toast" id="toast">✓ Documento guardado</div>
+
+<script>
+  const KEY = "ceo_docs_v1";
+  const $ = id => document.getElementById(id);
+  let docs = load();
+  let pendingImg = null;
+  let viewingId = null;
+  let currentCat = 'Todos';
+  let searchText = '';
+  const CATS = {Dinero:'💶 Dinero', 'Médico':'🩺 Médico', ID:'🪪 Identificación', Hogar:'🏠 Hogar', Otro:'📌 Otro'};
+  function catLabel(c){ return CATS[c] || CATS.Otro; }
+
+  function load(){ try{ return JSON.parse(localStorage.getItem(KEY)) || []; }catch(e){ return []; } }
+  function save(){ localStorage.setItem(KEY, JSON.stringify(docs)); }
+
+  function fmtDate(ts){
+    try{ return new Date(ts).toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'}); }
+    catch(e){ return ''; }
+  }
+
+  function matches(d){
+    if(currentCat!=='Todos' && (d.category||'Otro')!==currentCat) return false;
+    if(searchText){
+      const hay = [d.title, d.sender, d.subject, d.content].filter(Boolean).join(' ').toLowerCase();
+      if(!hay.includes(searchText)) return false;
+    }
+    return true;
+  }
+  function render(){
+    const list = $('list');
+    $('count').textContent = docs.length + (docs.length===1 ? ' guardado' : ' guardados');
+    if(!docs.length){
+      list.innerHTML = '<div class="empty"><div class="big">📄</div><p>Aún no hay documentos. Toca «Escanear documento» para empezar.</p></div>';
+      return;
+    }
+    const shown = docs.slice().reverse().filter(matches);
+    if(!shown.length){
+      list.innerHTML = '<div class="empty"><div class="big">🔍</div><p>No hay documentos que coincidan. Prueba con otra búsqueda o categoría.</p></div>';
+      return;
+    }
+    list.innerHTML = '';
+    shown.forEach(d=>{
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML =
+        '<img class="thumb" src="'+d.img+'" alt="">'+
+        '<div class="card-body"><div class="card-title"></div><div class="card-date card-sub"></div><span class="cat-pill"></span></div>'+
+        '<svg class="chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>';
+      card.querySelector('.card-title').textContent = d.title;
+      card.querySelector('.card-sub').textContent = (d.sender ? d.sender+' · ' : '') + 'Guardado el '+fmtDate(d.date);
+      card.querySelector('.cat-pill').textContent = catLabel(d.category||'Otro');
+      card.onclick = ()=> openViewer(d.id);
+      list.appendChild(card);
+    });
+  }
+
+  // Downscale image so it stays small and stays on-device
+  function processImage(file){
+    return new Promise(res=>{
+      const reader = new FileReader();
+      reader.onload = e=>{
+        const img = new Image();
+        img.onload = ()=>{
+          const max = 1200;
+          let {width:w, height:h} = img;
+          if(w>max || h>max){ const s = Math.min(max/w, max/h); w=Math.round(w*s); h=Math.round(h*s); }
+          const c = document.createElement('canvas'); c.width=w; c.height=h;
+          c.getContext('2d').drawImage(img,0,0,w,h);
+          res(c.toDataURL('image/jpeg', 0.72));
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function suggestName(){
+    const d = new Date();
+    const m = d.toLocaleDateString('es-ES',{month:'long'});
+    return 'Documento — ' + m.charAt(0).toUpperCase()+m.slice(1);
+  }
+
+  $('scanBtn').onclick = ()=> $('fileInput').click();
+
+  $('fileInput').onchange = async (e)=>{
+    const file = e.target.files[0];
+    e.target.value = '';
+    if(!file) return;
+    pendingImg = await processImage(file);
+    $('previewImg').src = pendingImg;
+    $('titleInput').value = suggestName();
+    openSheet('naming');
+    setTimeout(()=>{ $('titleInput').focus(); $('titleInput').select(); }, 300);
+  };
+
+  $('saveBtn').onclick = ()=>{
+    const title = ($('titleInput').value || '').trim() || suggestName();
+    const today = new Date().toISOString().slice(0,10);
+    docs.push({ id: 'd'+Date.now(), title, date: Date.now(), docDate: today, sender:'', subject:'', category:'Otro', content:'', img: pendingImg });
+    save(); render();
+    closeSheet('naming');
+    pendingImg = null;
+    showToast('✓ Documento guardado');
+  };
+
+  $('retakeBtn').onclick = ()=>{ closeSheet('naming'); pendingImg=null; $('fileInput').click(); };
+
+  function openViewer(id){
+    const d = docs.find(x=>x.id===id); if(!d) return;
+    viewingId = id;
+    $('viewImg').src = d.img; $('viewTitle').textContent = d.title;
+    $('viewDate').textContent = 'Guardado el ' + fmtDate(d.date);
+    $('dDate').value = d.docDate || '';
+    $('dSender').value = d.sender || '';
+    $('dSubject').value = d.subject || '';
+    $('dContent').value = d.content || '';
+    document.querySelectorAll('#dCats .chip').forEach(c=> c.classList.toggle('active', c.dataset.cat===(d.category||'Otro')));
+    openSheet('viewer');
+  }
+  $('closeViewBtn').onclick = ()=> closeSheet('viewer');
+  $('saveDetailsBtn').onclick = ()=>{
+    const d = docs.find(x=>x.id===viewingId); if(!d) return;
+    if($('dDate').value) d.docDate = $('dDate').value;
+    d.sender = $('dSender').value.trim();
+    d.subject = $('dSubject').value.trim();
+    d.content = $('dContent').value.trim();
+    const active = document.querySelector('#dCats .chip.active');
+    d.category = active ? active.dataset.cat : 'Otro';
+    save(); render(); closeSheet('viewer');
+    showToast('✓ Cambios guardados');
+  };
+  $('pdfBtn').onclick = ()=>{ const d = docs.find(x=>x.id===viewingId); if(d) exportPdf(d); };
+  // category chips inside the viewer (pick one)
+  document.querySelectorAll('#dCats .chip').forEach(c=>{
+    c.onclick = ()=>{ document.querySelectorAll('#dCats .chip').forEach(x=>x.classList.remove('active')); c.classList.add('active'); };
+  });
+  // home filter chips + search
+  document.querySelectorAll('#chips .chip').forEach(c=>{
+    c.onclick = ()=>{ document.querySelectorAll('#chips .chip').forEach(x=>x.classList.remove('active')); c.classList.add('active'); currentCat = c.dataset.cat; render(); };
+  });
+  $('search').addEventListener('input', e=>{ searchText = e.target.value.trim().toLowerCase(); render(); });
+  $('delBtn').onclick = ()=>{
+    if(!confirm('¿Eliminar este documento? No se puede deshacer.')) return;
+    docs = docs.filter(x=>x.id!==viewingId); save(); render();
+    closeSheet('viewer');
+    showToast('Documento eliminado');
+  };
+
+  function openSheet(id){ $(id).classList.add('show'); }
+  function closeSheet(id){ $(id).classList.remove('show'); }
+  // tap backdrop to close
+  ['naming','viewer'].forEach(id=>{
+    $(id).addEventListener('click', e=>{ if(e.target.id===id) closeSheet(id); });
+  });
+
+  let toastTimer;
+  function showToast(msg){
+    const t = $('toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(toastTimer); toastTimer = setTimeout(()=> t.classList.remove('show'), 1900);
+  }
+
+  /* ---- Phase 2: turn a scan into a real PDF, built on-device ---- */
+  function imgDims(dataUrl){
+    return new Promise(r=>{ const i=new Image(); i.onload=()=>r({w:i.naturalWidth||600,h:i.naturalHeight||800}); i.onerror=()=>r({w:600,h:800}); i.src=dataUrl; });
+  }
+  function safeName(t){
+    return (t||'documento').replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim().slice(0,60) + '.pdf';
+  }
+  // Build a minimal single-page PDF that embeds the JPEG directly (no libraries, nothing uploaded)
+  function jpegToPdfBlob(dataUrl, w, h){
+    const bin = atob(dataUrl.split(',')[1]);          // raw JPEG bytes as a binary string
+    const objs = {};
+    objs[1] = "<< /Type /Catalog /Pages 2 0 R >>";
+    objs[2] = "<< /Type /Pages /Kids [3 0 R] /Count 1 >>";
+    objs[3] = "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 "+w+" "+h+"] /Resources << /XObject << /Im0 5 0 R >> >> /Contents 4 0 R >>";
+    const content = "q "+w+" 0 0 "+h+" 0 0 cm /Im0 Do Q";
+    objs[4] = "<< /Length "+content.length+" >>\nstream\n"+content+"\nendstream";
+    objs[5] = "<< /Type /XObject /Subtype /Image /Width "+w+" /Height "+h+" /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length "+bin.length+" >>\nstream\n"+bin+"\nendstream";
+    let pdf = "%PDF-1.4\n"; const off = {};
+    for(let i=1;i<=5;i++){ off[i]=pdf.length; pdf += i+" 0 obj\n"+objs[i]+"\nendobj\n"; }
+    const xref = pdf.length;
+    pdf += "xref\n0 6\n0000000000 65535 f \n";
+    for(let i=1;i<=5;i++){ pdf += String(off[i]).padStart(10,'0')+" 00000 n \n"; }
+    pdf += "trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n"+xref+"\n%%EOF";
+    const bytes = new Uint8Array(pdf.length);
+    for(let i=0;i<pdf.length;i++) bytes[i] = pdf.charCodeAt(i) & 0xff;
+    return new Blob([bytes], {type:'application/pdf'});
+  }
+  async function exportPdf(d){
+    showToast('Preparando PDF…');
+    const {w,h} = await imgDims(d.img);
+    const blob = jpegToPdfBlob(d.img, w, h);
+    const name = safeName(d.title);
+    const file = new File([blob], name, {type:'application/pdf'});
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      try{ await navigator.share({files:[file], title:d.title}); return; }
+      catch(e){ if(e.name==='AbortError') return; }
+    }
+    const url = URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download=name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 5000);
+    showToast('✓ PDF listo');
+  }
+
+  render();
+</script>
+</body>
+</html>
