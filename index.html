@@ -116,9 +116,15 @@
   .lock-emblem{font-size:46px}
   .lockscreen h2{font-family:Georgia,serif;font-size:22px}
   .lock-sub{color:var(--ink-soft);font-size:14px;max-width:26ch;margin-bottom:8px}
-  .pin-input{width:200px;text-align:center;letter-spacing:6px;font-size:22px;padding:12px 14px;border-radius:13px;
-    border:1.5px solid var(--line);background:var(--sand-2);color:var(--ink);font-family:inherit}
-  .pin-input:focus{outline:none;border-color:var(--teal)}
+  .pin-dots{display:flex;gap:16px;margin:6px 0 2px}
+  .pin-dots i{width:15px;height:15px;border-radius:50%;border:2px solid var(--teal);background:transparent;transition:background .1s}
+  .pin-dots i.on{background:var(--teal)}
+  .keypad{display:grid;grid-template-columns:repeat(3,74px);gap:14px;margin-top:12px}
+  .keypad button{appearance:none;border:1.5px solid var(--line);background:var(--sand-2);color:var(--ink);
+    width:74px;height:74px;border-radius:50%;font-size:27px;font-weight:600;font-family:inherit;cursor:pointer;
+    display:grid;place-items:center;transition:background .1s,transform .06s}
+  .keypad button:active{transform:scale(.93);background:var(--line)}
+  .keypad button[data-k="bio"],.keypad button[data-k="del"]{background:transparent;border-color:transparent;font-size:23px;color:var(--teal)}
   .lock-msg{color:var(--danger);font-size:13px;min-height:18px}
   .or{color:var(--ink-soft);font-size:12px;margin:6px 0}
   .linkbtn{appearance:none;border:none;background:transparent;cursor:pointer;color:var(--ink-soft);
@@ -213,15 +219,28 @@
       <div class="lockscreen" id="lockScreen">
         <div class="lock-emblem">🔒</div>
         <h2 id="lockTitle">Archivo protegido</h2>
-        <p class="lock-sub" id="lockSub">Desbloquea para ver tus documentos</p>
-        <div id="bioWrap" hidden style="display:flex;flex-direction:column;align-items:center">
-          <button class="btn btn-primary" id="bioBtn" style="max-width:220px">Entrar con Face ID</button>
-          <div class="or">o con tu PIN</div>
-        </div>
-        <input class="pin-input" id="pinInput" type="password" inputmode="numeric" maxlength="8" placeholder="Tu PIN">
-        <button class="btn btn-primary" id="pinBtn" style="max-width:220px">Entrar</button>
+        <p class="lock-sub" id="lockSub">Escribe tu PIN</p>
+        <div class="pin-dots" id="pinDots"><i></i><i></i><i></i><i></i></div>
         <p class="lock-msg" id="lockMsg"></p>
-        <div id="resetWrap" hidden><button class="linkbtn" id="resetBtn">Restablecer bloqueo</button></div>
+        <div class="keypad" id="keypad">
+          <button type="button" data-k="1">1</button>
+          <button type="button" data-k="2">2</button>
+          <button type="button" data-k="3">3</button>
+          <button type="button" data-k="4">4</button>
+          <button type="button" data-k="5">5</button>
+          <button type="button" data-k="6">6</button>
+          <button type="button" data-k="7">7</button>
+          <button type="button" data-k="8">8</button>
+          <button type="button" data-k="9">9</button>
+          <button type="button" data-k="bio" id="kpBio" aria-label="Face ID">☺</button>
+          <button type="button" data-k="0">0</button>
+          <button type="button" data-k="del" aria-label="Borrar">⌫</button>
+        </div>
+        <div id="bioSetup" hidden style="display:flex;flex-direction:column;gap:10px;width:220px;margin-top:8px">
+          <button class="btn btn-primary" id="bioEnrollBtn">Activar Face ID</button>
+          <button class="btn btn-ghost" id="bioSkipBtn">Ahora no</button>
+        </div>
+        <div id="resetWrap" hidden style="margin-top:6px"><button class="linkbtn" id="resetBtn">Restablecer bloqueo</button></div>
       </div>
 
       <div class="archive-wrap" id="archiveBody" hidden>
@@ -399,35 +418,42 @@
       allowCredentials:[{type:'public-key',id:unb64(id)}], userVerification:'required', timeout:60000 }});
     return !!cred;
   }
+  let lockMode='login', entry='', firstPin='';
+  function drawDots(){ const d=$('pinDots').children; for(let i=0;i<4;i++) d[i].classList.toggle('on', i<entry.length); }
   function showLock(){
-    unlocked=false; $('lockScreen').hidden=false; $('archiveBody').hidden=true; tempPin=null;
-    const setup=!hasPin();
-    $('lockTitle').textContent = setup?'Protege tus archivos':'Archivo protegido';
-    $('lockSub').textContent = setup?'Crea un PIN para que solo tú abras tus documentos':'Desbloquea para ver tus documentos';
-    $('pinInput').value=''; $('pinInput').placeholder = setup?'Nuevo PIN (mín. 4)':'Tu PIN';
-    $('pinBtn').textContent = setup?'Crear PIN':'Entrar'; $('lockMsg').textContent='';
-    $('resetWrap').hidden = setup;
-    (async()=>{ $('bioWrap').hidden = !(localStorage.getItem(BIO_KEY) && await bioAvailable()); })();
+    unlocked=false; $('lockScreen').hidden=false; $('archiveBody').hidden=true;
+    entry=''; firstPin=''; $('lockMsg').textContent=''; $('bioSetup').hidden=true; $('keypad').hidden=false;
+    if(hasPin()){ lockMode='login'; $('lockTitle').textContent='Archivo protegido'; $('lockSub').textContent='Escribe tu PIN'; $('resetWrap').hidden=false; }
+    else { lockMode='setup1'; $('lockTitle').textContent='Protege tus archivos'; $('lockSub').textContent='Crea un PIN de 4 números'; $('resetWrap').hidden=true; }
+    (async()=>{ const ok = !!localStorage.getItem(BIO_KEY) && await bioAvailable(); $('kpBio').style.visibility = ok?'visible':'hidden'; })();
+    drawDots();
   }
   function doUnlock(){
     unlocked=true; $('lockScreen').hidden=true; $('archiveBody').hidden=false;
     buildPills($('orgPills'), orgSelected, renderOrganize); renderOrganize();
   }
-  $('pinBtn').onclick = async ()=>{
-    const v=$('pinInput').value.trim();
-    if(!hasPin()){
-      if(!/^\d{4,8}$/.test(v)){ $('lockMsg').textContent='Usa de 4 a 8 números.'; return; }
-      if(tempPin===null){ tempPin=v; $('pinInput').value=''; $('lockSub').textContent='Repite el PIN para confirmar'; $('lockMsg').textContent=''; return; }
-      if(v!==tempPin){ tempPin=null; $('lockSub').textContent='No coincidió. Crea tu PIN otra vez'; $('lockMsg').textContent=''; return; }
-      setPin(v); tempPin=null;
-      if(await bioAvailable() && confirm('¿Activar Face ID / huella para abrir más rápido la próxima vez?')){ try{ await bioEnroll(); }catch(e){} }
-      doUnlock();
-    } else {
-      if(checkPin(v)) doUnlock(); else { $('lockMsg').textContent='PIN incorrecto.'; $('pinInput').value=''; }
+  function lockSubmit(){
+    if(lockMode==='setup1'){ firstPin=entry; entry=''; lockMode='setup2'; $('lockSub').textContent='Repite tu PIN'; $('lockMsg').textContent=''; drawDots(); return; }
+    if(lockMode==='setup2'){
+      if(entry===firstPin){ setPin(entry); entry=''; drawDots(); offerBio(); }
+      else { entry=''; firstPin=''; lockMode='setup1'; $('lockSub').textContent='Crea un PIN de 4 números'; $('lockMsg').textContent='No coincidió. Intenta otra vez.'; drawDots(); }
+      return;
     }
-  };
-  $('pinInput').addEventListener('keydown', e=>{ if(e.key==='Enter') $('pinBtn').click(); });
-  $('bioBtn').onclick = async ()=>{ try{ if(await bioUnlock()) doUnlock(); else $('lockMsg').textContent='No se reconoció. Usa tu PIN.'; }catch(e){ $('lockMsg').textContent='No se pudo usar Face ID. Usa tu PIN.'; } };
+    if(checkPin(entry)){ entry=''; drawDots(); doUnlock(); }
+    else { entry=''; $('lockMsg').textContent='PIN incorrecto.'; drawDots(); }
+  }
+  function lockPress(k){
+    if(k==='del'){ entry=entry.slice(0,-1); $('lockMsg').textContent=''; drawDots(); return; }
+    if(k==='bio'){ tryBio(); return; }
+    if(entry.length>=4) return;
+    entry+=k; drawDots();
+    if(entry.length===4) setTimeout(lockSubmit,150);
+  }
+  function offerBio(){ (async()=>{ if(await bioAvailable()){ $('keypad').hidden=true; $('lockTitle').textContent='Casi listo'; $('lockSub').textContent='¿Usar Face ID la próxima vez?'; $('bioSetup').hidden=false; } else doUnlock(); })(); }
+  async function tryBio(){ try{ if(await bioUnlock()) doUnlock(); else $('lockMsg').textContent='No se reconoció. Usa tu PIN.'; }catch(e){ $('lockMsg').textContent='Usa tu PIN.'; } }
+  document.querySelectorAll('#keypad button').forEach(b=> b.onclick=()=> lockPress(b.dataset.k));
+  $('bioEnrollBtn').onclick = async ()=>{ try{ await bioEnroll(); }catch(e){} doUnlock(); };
+  $('bioSkipBtn').onclick = ()=> doUnlock();
   $('resetBtn').onclick = ()=>{ if(confirm('¿Restablecer el bloqueo? Podrás crear un PIN nuevo. Tus documentos NO se borran.')){ localStorage.removeItem(PIN_KEY); localStorage.removeItem(BIO_KEY); showLock(); } };
   $('relockBtn').onclick = ()=> showLock();
 
@@ -525,7 +551,9 @@
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),5000); showToast('✓ PDF listo');
   }
 
-  if('serviceWorker' in navigator){ window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); }); }
+  // Always load fresh while we're iterating: remove any old service worker + offline caches.
+  if('serviceWorker' in navigator){ navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())).catch(()=>{}); }
+  if(window.caches && caches.keys){ caches.keys().then(ks=>ks.forEach(k=>caches.delete(k))).catch(()=>{}); }
 </script>
 </body>
 </html>
