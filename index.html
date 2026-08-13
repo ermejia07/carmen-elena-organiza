@@ -199,6 +199,26 @@
   #agTabs .chip b{margin-left:3px;font-variant-numeric:tabular-nums}
   .ag-actions{display:flex;gap:10px}
   .ag-actions .btn{padding:13px}
+  #listaView{display:flex;flex-direction:column;gap:14px}
+  .ag-toggle{display:flex;gap:6px;background:var(--sand-2);border:1px solid var(--line);border-radius:12px;padding:4px}
+  .agv{flex:1;appearance:none;border:none;background:transparent;cursor:pointer;padding:9px;border-radius:9px;font-family:inherit;font-size:14px;font-weight:640;color:var(--ink-soft)}
+  .agv.active{background:var(--teal);color:#fff}
+  .cal-head{display:flex;align-items:center;justify-content:space-between;padding:2px 2px;margin-top:2px}
+  .cal-head b{font-family:Georgia,serif;font-size:18px}
+  .cal-nav{appearance:none;border:1px solid var(--line);background:var(--sand-2);color:var(--ink);width:38px;height:38px;border-radius:11px;font-size:20px;cursor:pointer}
+  .cal-nav:active{background:var(--line)}
+  .cal-dow{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:10px 0 4px}
+  .cal-dow span{text-align:center;font-size:11px;font-weight:700;color:var(--ink-soft)}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+  .cal-cell{min-height:54px;border:1px solid var(--line);border-radius:9px;background:var(--sand-2);padding:4px;display:flex;flex-direction:column;gap:3px}
+  .cal-cell.empty{background:transparent;border:none}
+  .cal-cell.today{border-color:var(--teal);box-shadow:inset 0 0 0 1px var(--teal)}
+  .cal-d{font-size:11px;color:var(--ink-soft);font-weight:600}
+  .cal-dots{display:flex;flex-wrap:wrap;gap:3px}
+  .cdot{min-width:18px;height:18px;border-radius:50%;color:#fff;font-size:10.5px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;padding:0 3px;line-height:1}
+  .cdot.sm{min-width:12px;height:12px;padding:0}
+  .cal-legend{display:flex;flex-wrap:wrap;gap:10px 14px;margin-top:12px;justify-content:center}
+  .leg{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--ink-soft)}
   .entry{display:flex;align-items:flex-start;gap:10px;background:var(--sand-2);border:1px solid var(--line);border-radius:15px;padding:12px;box-shadow:var(--shadow)}
   .entry.done{opacity:.5}
   .entry.done .etitle{text-decoration:line-through}
@@ -342,6 +362,12 @@
           </div>
         </div>
 
+        <div class="ag-toggle">
+          <button class="agv active" data-v="lista">📋 Lista</button>
+          <button class="agv" data-v="calendario">📅 Calendario</button>
+        </div>
+
+        <div id="listaView">
         <div class="pillrow" id="agTabsRow">
           <div class="pill-track" id="agTabs">
             <button class="chip active" data-t="all">Todo <b>0</b></button>
@@ -364,6 +390,14 @@
           <label class="fld" for="newListDate" style="margin:2px 2px 4px">Fecha de la lista (opcional)</label>
           <input type="date" id="newListDate" class="sel">
           <div id="listsWrap"></div>
+        </div>
+        </div><!-- /listaView -->
+
+        <div id="calView" hidden>
+          <div class="cal-head"><button class="cal-nav" id="calPrev" aria-label="Mes anterior">‹</button><b id="calTitle"></b><button class="cal-nav" id="calNext" aria-label="Mes siguiente">›</button></div>
+          <div class="cal-dow"><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span></div>
+          <div class="cal-grid" id="calGrid"></div>
+          <div class="cal-legend" id="calLegend"></div>
         </div>
       </div>
     </section>
@@ -750,6 +784,10 @@
   /* ================= AGENDA (imported from IN2) ================= */
   let entries=[], lists=[], focusListId=null;
   let agFilter='all', editEntryId=null, entryType='note';
+  let agView='lista', calY=new Date().getFullYear(), calM=new Date().getMonth();
+  const TYPE_ORDER=['finance','note','reminder','calendar','compras'];
+  const TYPE_COLOR={finance:'#d9463c',note:'#2f6fb0',reminder:'#e8843c',calendar:'#7a5bb0',compras:'#2f8f5b'};
+  const TYPE_NAME={finance:'Finanzas',note:'Notas',reminder:'Recordatorios',calendar:'Citas',compras:'Compras'};
   const ETYPES=[{k:'note',emoji:'📝',label:'Nota',plural:'Notas'},{k:'reminder',emoji:'⏰',label:'Recordatorio',plural:'Recordatorios'},{k:'calendar',emoji:'📅',label:'Cita',plural:'Citas'},{k:'finance',emoji:'💰',label:'Finanza',plural:'Finanzas'}];
   const EMAP=Object.fromEntries(ETYPES.map(t=>[t.k,t]));
   const CATS=['General','Médico / Salud','Finanzas','Lugares','Personal','Compras','Importante'];
@@ -773,6 +811,10 @@
     $('todayList').innerHTML=build(today,'','Nada para hoy'); $('upList').innerHTML=build(up,'dot2','Nada próximo');
     $('todayList').querySelectorAll('.rt').forEach((n,i)=>{ n.textContent=today[i].title; });
     $('upList').querySelectorAll('.rt').forEach((n,i)=>{ n.textContent=up[i].title; });
+    document.querySelectorAll('.agv').forEach(b=>b.classList.toggle('active', b.dataset.v===agView));
+    const calMode = agView==='calendario';
+    $('listaView').hidden = calMode; $('calView').hidden = !calMode;
+    if(calMode){ renderCalendar(); return; }
     document.querySelectorAll('#agTabs .chip').forEach(b=>{ const tt=b.dataset.t; let n; if(tt==='all') n=entries.length; else if(tt==='compras') n=lists.length; else n=entries.filter(e=>e.type===tt).length; b.querySelector('b').textContent=n; b.classList.toggle('active', tt===agFilter); });
     const isCompras = agFilter==='compras';
     $('agActions').hidden = isCompras;
@@ -870,6 +912,34 @@
   $('newListAdd').onclick=addList;
   $('newListInput').addEventListener('keydown',e=>{ if(e.key==='Enter') addList(); });
   $('entryForm').addEventListener('click', e=>{ if(e.target.id==='entryForm') closeSheet('entryForm'); });
+
+  /* ---- Calendar (graph) view ---- */
+  function pad2(n){ return String(n).padStart(2,'0'); }
+  function renderCalendar(){
+    const first=new Date(calY,calM,1);
+    $('calTitle').textContent = first.toLocaleDateString('es-ES',{month:'long',year:'numeric'}).replace(/^./,c=>c.toUpperCase());
+    const daysIn=new Date(calY,calM+1,0).getDate();
+    const startDow=(first.getDay()+6)%7;   // Monday-first
+    const map={};
+    entries.forEach(e=>{ if(!e.date) return; const d=e.date.slice(0,10); map[d]=map[d]||{}; map[d][e.type]=(map[d][e.type]||0)+1; });
+    lists.forEach(L=>{ if(!L.due) return; const d=L.due.slice(0,10); map[d]=map[d]||{}; map[d].compras=(map[d].compras||0)+1; });
+    const today=todayStr();
+    const grid=$('calGrid'); grid.innerHTML='';
+    for(let i=0;i<startDow;i++){ const c=document.createElement('div'); c.className='cal-cell empty'; grid.appendChild(c); }
+    for(let d=1; d<=daysIn; d++){
+      const ymd=calY+'-'+pad2(calM+1)+'-'+pad2(d);
+      const c=document.createElement('div'); c.className='cal-cell'+(ymd===today?' today':'');
+      let dots=''; const cm=map[ymd];
+      if(cm){ TYPE_ORDER.forEach(t=>{ if(cm[t]) dots+='<span class="cdot" style="background:'+TYPE_COLOR[t]+'">'+cm[t]+'</span>'; }); }
+      c.innerHTML='<span class="cal-d">'+d+'</span><span class="cal-dots">'+dots+'</span>';
+      grid.appendChild(c);
+    }
+    $('calLegend').innerHTML = TYPE_ORDER.map(t=>'<span class="leg"><span class="cdot sm" style="background:'+TYPE_COLOR[t]+'"></span>'+TYPE_NAME[t]+'</span>').join('');
+  }
+  function calShift(delta){ calM+=delta; if(calM<0){ calM=11; calY--; } if(calM>11){ calM=0; calY++; } renderCalendar(); }
+  document.querySelectorAll('.agv').forEach(b=> b.onclick=()=>{ agView=b.dataset.v; renderAgenda(); });
+  $('calPrev').onclick=()=>calShift(-1);
+  $('calNext').onclick=()=>calShift(1);
 
   initStore();
 
