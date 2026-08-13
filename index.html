@@ -573,6 +573,8 @@
   // Always load fresh while we're iterating: remove any old service worker + offline caches.
   if('serviceWorker' in navigator){ navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())).catch(()=>{}); }
   if(window.caches && caches.keys){ caches.keys().then(ks=>ks.forEach(k=>caches.delete(k))).catch(()=>{}); }
+  // Ask the browser to keep this app's data permanently (don't evict).
+  if(navigator.storage && navigator.storage.persist){ navigator.storage.persist().catch(()=>{}); }
 </script>
 </body>
 </html>
