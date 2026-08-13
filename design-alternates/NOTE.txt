@@ -1,0 +1,11 @@
+DESIGN ALTERNATE — "more pinched" CEO emblem (NOT the live version)
+
+The LIVE emblem uses a gentler pinch: field rv = 0.18*S, white-line rv = 0.145*S
+(see the icon-180.png / icon-512.png in the project root, and the header SVG in index.html).
+
+This alternate pinches the top & bottom notches closer to the "E":
+  field  rv = 0.12*S   (corners R = 0.47*S, side rh = 0.275*S)
+  white  rv = 0.095*S  (R = 0.385*S, rh = 0.225*S)
+
+To make this alternate the LIVE one later, regenerate icon-180/512.png with these
+rv values and update the header <path class="field"/> and <path class="edge"/> in index.html.
