@@ -236,6 +236,7 @@
   .ml{border:1px solid var(--line);border-radius:14px;background:var(--sand-2);overflow:hidden;box-shadow:var(--shadow)}
   .ml-head{display:flex;align-items:center;gap:10px;padding:13px 14px;cursor:pointer}
   .ml-name{flex:1;font-weight:640;font-size:15.5px}
+  .ml-due{font-size:11.5px;font-weight:700;color:#fff;background:var(--teal);border-radius:100px;padding:2px 9px;white-space:nowrap}
   .ml-count{font-size:12px;color:var(--ink-soft);background:var(--line);border-radius:100px;padding:2px 9px;font-variant-numeric:tabular-nums}
   .ml-del{appearance:none;border:none;background:transparent;cursor:pointer;font-size:15px;padding:2px 4px}
   .ml-chev{color:var(--ink-soft);font-size:18px;transition:transform .15s}
@@ -360,6 +361,8 @@
         <div class="list" id="agList"></div>
         <div id="comprasView" hidden>
           <div class="mdadd"><input type="text" id="newListInput" placeholder="Nueva lista (ej: Compras del Mercado)" autocomplete="off"><button class="mdadd-btn" id="newListAdd" aria-label="Crear lista">＋</button></div>
+          <label class="fld" for="newListDate" style="margin:2px 2px 4px">Fecha de la lista (opcional)</label>
+          <input type="date" id="newListDate" class="sel">
           <div id="listsWrap"></div>
         </div>
       </div>
@@ -839,11 +842,12 @@
     lists.forEach(L=>{
       if(!Array.isArray(L.items)) L.items=[];
       const el=document.createElement('div'); el.className='ml'+(L.open?' open':''); el.dataset.id=L.id;
-      el.innerHTML='<div class="ml-head"><span class="ml-name"></span><span class="ml-count">'+L.items.length+'</span><button class="ml-del" aria-label="Borrar lista">🗑</button><span class="ml-chev">›</span></div>'+
-        '<div class="ml-body"'+(L.open?'':' hidden')+'><div class="mdadd"><input type="text" class="ml-input" placeholder="Agregar…" autocomplete="off"><button class="mdadd-btn ml-add" aria-label="Agregar">＋</button></div><div class="ml-items"></div>'+(L.items.length?'<button class="linkbtn ml-clear">Borrar todo</button>':'')+'</div>';
+      el.innerHTML='<div class="ml-head"><span class="ml-name"></span>'+(L.due?'<span class="ml-due">📅 '+fmtDay(L.due)+'</span>':'')+'<span class="ml-count">'+L.items.length+'</span><button class="ml-del" aria-label="Borrar lista">🗑</button><span class="ml-chev">›</span></div>'+
+        '<div class="ml-body"'+(L.open?'':' hidden')+'><label class="fld" style="margin:2px 2px 4px">Fecha (opcional)</label><input type="date" class="sel ml-date"><div class="mdadd"><input type="text" class="ml-input" placeholder="Agregar…" autocomplete="off"><button class="mdadd-btn ml-add" aria-label="Agregar">＋</button></div><div class="ml-items"></div>'+(L.items.length?'<button class="linkbtn ml-clear">Borrar todo</button>':'')+'</div>';
       el.querySelector('.ml-name').textContent=L.name;
+      const dateEl=el.querySelector('.ml-date'); if(dateEl){ dateEl.value=L.due||''; dateEl.onchange=()=>{ L.due=dateEl.value||''; saveLists(); renderCompras(); }; }
       el.querySelector('.ml-head').onclick=(e)=>{ if(e.target.closest('.ml-del')) return; L.open=!L.open; saveLists(); renderCompras(); };
-      el.querySelector('.ml-del').onclick=(e)=>{ e.stopPropagation(); if(confirm('¿Borrar la lista «'+L.name+'»?')){ lists=lists.filter(x=>x.id!==L.id); saveLists(); renderCompras(); } };
+      el.querySelector('.ml-del').onclick=(e)=>{ e.stopPropagation(); if(confirm('¿Borrar la lista «'+L.name+'»?')){ lists=lists.filter(x=>x.id!==L.id); saveLists(); renderAgenda(); } };
       const itemsEl=el.querySelector('.ml-items');
       L.items.forEach(it=>{
         const row=document.createElement('div'); row.className='mdrow'+(it.done?' on':'');
@@ -862,7 +866,7 @@
     });
     if(focusListId){ const fi=wrap.querySelector('.ml[data-id="'+focusListId+'"] .ml-input'); if(fi) fi.focus(); focusListId=null; }
   }
-  function addList(){ const v=$('newListInput').value.trim(); if(!v) return; lists.push({id:'L'+Date.now(),name:v,open:true,items:[]}); $('newListInput').value=''; saveLists(); renderCompras(); }
+  function addList(){ const v=$('newListInput').value.trim(); if(!v) return; lists.push({id:'L'+Date.now(),name:v,due:$('newListDate').value||'',open:true,items:[]}); $('newListInput').value=''; $('newListDate').value=''; saveLists(); renderAgenda(); }
   $('newListAdd').onclick=addList;
   $('newListInput').addEventListener('keydown',e=>{ if(e.key==='Enter') addList(); });
   $('entryForm').addEventListener('click', e=>{ if(e.target.id==='entryForm') closeSheet('entryForm'); });
