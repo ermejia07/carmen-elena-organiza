@@ -1,0 +1,17 @@
+{
+  "name": "Carmen Elena Organiza",
+  "short_name": "CarElena",
+  "description": "Escanea, nombra y organiza tus documentos — privado, en tu teléfono.",
+  "lang": "es",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fbf7f0",
+  "theme_color": "#0e7c6b",
+  "icons": [
+    { "src": "icon-180.png", "sizes": "180x180", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
