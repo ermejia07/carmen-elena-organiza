@@ -179,6 +179,59 @@
   .view-meta .d{color:var(--ink-soft);font-size:13px;margin-top:3px}
   .del{background:transparent;border:none;color:var(--danger);font-size:15px;font-weight:600;cursor:pointer;padding:12px;margin-top:6px}
 
+  /* ---- Agenda ---- */
+  .agenda-wrap{padding:18px 18px 8px;display:flex;flex-direction:column;gap:14px}
+  .greet{background:var(--teal);color:#fff;border-radius:18px;padding:16px 18px;box-shadow:var(--shadow);cursor:pointer}
+  .greet-top{display:flex;align-items:center;gap:9px;font-size:18px}
+  .greet-top b{font-family:Georgia,serif;font-weight:700;flex:1}
+  .greet-top .gchev{opacity:.85;font-size:20px;transition:transform .15s}
+  .greet.open .gchev{transform:rotate(90deg)}
+  .greet-status{display:flex;gap:12px;margin-top:6px;font-size:13.5px;opacity:.95;flex-wrap:wrap}
+  .greet-status span:last-child{margin-left:auto}
+  .greet-expand{margin-top:12px;border-top:1px solid rgba(255,255,255,.25);padding-top:8px;display:flex;flex-direction:column;gap:2px}
+  .ge-h{font-size:11.5px;font-weight:700;opacity:.9;text-transform:uppercase;letter-spacing:.4px;margin-top:7px}
+  .ge-list{display:flex;flex-direction:column;gap:3px}
+  .mini-row{display:flex;align-items:center;gap:8px;font-size:14px}
+  .mini-row .dot{width:7px;height:7px;border-radius:50%;background:#fff;flex:none}
+  .mini-row .dot2{background:var(--coral)}
+  .more{font-size:12.5px;opacity:.85}
+  #agTabs .chip b{margin-left:3px;font-variant-numeric:tabular-nums}
+  .ag-actions{display:flex;gap:10px}
+  .ag-actions .btn{padding:13px}
+  .entry{display:flex;align-items:flex-start;gap:10px;background:var(--sand-2);border:1px solid var(--line);border-radius:15px;padding:12px;box-shadow:var(--shadow)}
+  .entry.done{opacity:.5}
+  .entry.done .etitle{text-decoration:line-through}
+  .etype{width:34px;height:34px;flex:none;border-radius:10px;display:grid;place-items:center;font-size:17px;background:var(--line)}
+  .etype.e-note{background:#e6ece9}
+  .etype.e-reminder{background:#d8efe9}
+  .etype.e-calendar{background:#fbe6d4}
+  .etype.e-finance{background:#f6e4c9}
+  .ebody{flex:1;min-width:0}
+  .etitle{font-weight:640;font-size:15.5px}
+  .edet{font-size:13px;color:var(--ink-soft);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .emeta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px}
+  .edate{font-size:11.5px;color:var(--ink-soft)}
+  .eacts{display:flex;flex-direction:column;gap:2px;flex:none}
+  .eacts .ea{appearance:none;border:none;background:transparent;cursor:pointer;font-size:15px;padding:3px 6px;color:var(--ink-soft);border-radius:8px}
+  .eacts .ea:active{background:var(--line)}
+  .sel{width:100%;font-size:15px;padding:11px 13px;border-radius:11px;margin-bottom:6px;border:1.5px solid var(--line);background:var(--sand);color:var(--ink);font-family:inherit}
+  .sel:focus{outline:none;border-color:var(--teal)}
+  .mdblock{margin-bottom:16px}
+  .mdhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .mdhead h3{font-size:15px}
+  .mdadd{display:flex;gap:8px;margin-bottom:8px}
+  .mdadd input{flex:1;font-size:15px;padding:11px 13px;border-radius:11px;border:1.5px solid var(--line);background:var(--sand);color:var(--ink);font-family:inherit}
+  .mdadd input:focus{outline:none;border-color:var(--teal)}
+  .mdadd-btn{flex:none;width:44px;border:none;border-radius:11px;background:var(--teal);color:#fff;font-size:22px;cursor:pointer}
+  .mdlist{display:flex;flex-direction:column;gap:6px}
+  .mdrow{display:flex;align-items:center;gap:10px;background:var(--sand-2);border:1px solid var(--line);border-radius:11px;padding:10px 12px}
+  .mdrow .ck{width:24px;height:24px;flex:none;border-radius:7px;border:2px solid var(--teal);background:transparent;cursor:pointer;display:grid;place-items:center;color:#fff;font-size:14px}
+  .mdrow.on .ck{background:var(--teal)}
+  .mdrow .nm{flex:1;font-size:15px}
+  .mdrow.on .nm{text-decoration:line-through;color:var(--ink-soft)}
+  .mdrow .rm{appearance:none;border:none;background:transparent;color:var(--danger);cursor:pointer;font-size:16px;padding:2px 6px}
+  .md-empty{font-size:13px;color:var(--ink-soft);padding:4px 2px}
+
   .toast{ position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);
     background:var(--good);color:#fff;font-weight:600;font-size:15px; padding:13px 22px;border-radius:100px;box-shadow:var(--shadow-lift);
     z-index:60;opacity:0;pointer-events:none;transition:all .3s ease; display:flex;align-items:center;gap:9px; }
@@ -261,6 +314,40 @@
         <div class="list" id="listOrg"></div>
       </div>
     </section>
+
+    <!-- PAGE 3: AGENDA -->
+    <section class="page" id="page-agenda" hidden>
+      <div class="agenda-wrap">
+        <div class="greet" id="greetCard">
+          <div class="greet-top"><span id="greetIcon">🌤️</span><b id="greetText">Buen día</b><span class="gchev">›</span></div>
+          <div class="greet-status"><span id="statTodo">Por hacer: 0</span><span id="statDone">Hechas: 0</span><span id="statToday">Hoy: 0</span></div>
+          <div class="greet-expand" id="greetExpand" hidden>
+            <div class="ge-h">Hoy (<span id="todayN">0</span>)</div>
+            <div id="todayList" class="ge-list"></div>
+            <div class="ge-h">Próximos (<span id="upN">0</span>)</div>
+            <div id="upList" class="ge-list"></div>
+          </div>
+        </div>
+
+        <div class="pillrow" id="agTabsRow">
+          <div class="pill-track" id="agTabs">
+            <button class="chip active" data-t="all">Todo <b>0</b></button>
+            <button class="chip" data-t="note">📝 Notas <b>0</b></button>
+            <button class="chip" data-t="reminder">⏰ Recordatorios <b>0</b></button>
+            <button class="chip" data-t="calendar">📅 Citas <b>0</b></button>
+            <button class="chip" data-t="finance">💰 Finanzas <b>0</b></button>
+          </div>
+        </div>
+
+        <div class="ag-actions">
+          <button class="btn btn-primary" id="addEntryBtn">➕ Agregar</button>
+          <button class="btn btn-ghost" id="miDiaBtn">🗺️ Mi Día</button>
+        </div>
+
+        <div class="sec-head"><h2 id="agLabel">Todo</h2><span class="count" id="agCount">0</span></div>
+        <div class="list" id="agList"></div>
+      </div>
+    </section>
   </main>
 
   <nav class="tabbar">
@@ -277,6 +364,12 @@
         <rect x="1" y="3" width="22" height="5" rx="1"></rect><path d="M10 12h4"></path>
       </svg>
       <span>Archivo</span><span class="tabdot"></span>
+    </button>
+    <button class="tab" data-page="agenda">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path>
+      </svg>
+      <span>Agenda</span><span class="tabdot"></span>
     </button>
   </nav>
 </div>
@@ -329,6 +422,58 @@
   </div>
 </div>
 
+<!-- Agenda: add/edit entry -->
+<div class="overlay" id="entryForm">
+  <div class="sheet">
+    <h2 id="efFormTitle">Nueva nota</h2>
+    <p class="sub">Anota lo que necesites recordar</p>
+    <div class="pillrow"><div class="pill-track" id="efType">
+      <button type="button" class="chip active" data-k="note">📝 Nota</button>
+      <button type="button" class="chip" data-k="reminder">⏰ Recordatorio</button>
+      <button type="button" class="chip" data-k="calendar">📅 Cita</button>
+      <button type="button" class="chip" data-k="finance">💰 Finanza</button>
+    </div></div>
+    <label class="fld" for="efTitle">Título</label>
+    <input type="text" id="efTitle" placeholder="¿Qué necesitas recordar?" autocomplete="off">
+    <div class="details">
+      <label class="fld" for="efDetails">Detalles</label>
+      <textarea id="efDetails" placeholder="Cualquier detalle…"></textarea>
+      <label class="fld" for="efDate">Fecha</label>
+      <input type="date" id="efDate">
+      <label class="fld" for="efTime">Hora</label>
+      <input type="time" id="efTime">
+      <label class="fld" for="efPrio">Prioridad</label>
+      <select id="efPrio" class="sel"><option value="">—</option><option>Baja</option><option>Media</option><option>Alta</option><option>Urgente</option></select>
+      <label class="fld" for="efCat">Categoría</label>
+      <select id="efCat" class="sel"></select>
+      <input type="text" id="efCatCustom" placeholder="Nombre de la categoría" hidden style="margin-top:6px">
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="efCancel">Cancelar</button>
+      <button class="btn btn-primary" id="efSave">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Agenda: Mi Día (two simple checklists) -->
+<div class="overlay" id="miDia">
+  <div class="sheet">
+    <h2>Mi Día</h2>
+    <p class="sub">Tus listas rápidas</p>
+    <div class="mdblock">
+      <div class="mdhead"><h3>🛒 Lista de compras</h3><button class="linkbtn" id="clearShop">Borrar todo</button></div>
+      <div class="mdadd"><input type="text" id="shopInput" placeholder="Agregar…" autocomplete="off"><button class="mdadd-btn" id="shopAdd" aria-label="Agregar">＋</button></div>
+      <div id="shopList" class="mdlist"></div>
+    </div>
+    <div class="mdblock">
+      <div class="mdhead"><h3>🗺️ Mandados</h3><button class="linkbtn" id="clearErr">Borrar todo</button></div>
+      <div class="mdadd"><input type="text" id="errInput" placeholder="Agregar…" autocomplete="off"><button class="mdadd-btn" id="errAdd" aria-label="Agregar">＋</button></div>
+      <div id="errList" class="mdlist"></div>
+    </div>
+    <div class="btn-row"><button class="btn btn-primary" id="miDiaClose">Cerrar</button></div>
+  </div>
+</div>
+
 <div class="toast" id="toast">✓ Documento guardado</div>
 
 <script>
@@ -375,6 +520,9 @@
     docs = (arr||[]).map(normalize).sort((a,b)=>(a.date||0)-(b.date||0));
     pinHashVal = await idbGet('pin'); if(pinHashVal==null){ pinHashVal = localStorage.getItem(PIN_KEY)||null; if(pinHashVal) idbSet('pin',pinHashVal); }
     bioIdVal = await idbGet('bio'); if(bioIdVal==null){ bioIdVal = localStorage.getItem(BIO_KEY)||null; if(bioIdVal) idbSet('bio',bioIdVal); }
+    entries = (await idbGet('agenda'))||[]; if(!entries.length){ try{ const ls=localStorage.getItem('ceo_agenda'); if(ls) entries=JSON.parse(ls); }catch(e){} }
+    shopping = (await idbGet('shopping'))||[]; if(!shopping.length){ try{ const ls=localStorage.getItem('ceo_shopping'); if(ls) shopping=JSON.parse(ls); }catch(e){} }
+    errands = (await idbGet('errands'))||[]; if(!errands.length){ try{ const ls=localStorage.getItem('ceo_errands'); if(ls) errands=JSON.parse(ls); }catch(e){} }
     refresh();   // show the archive list if it happens to be open (it renders on unlock otherwise)
   }
   function fmtDate(ts){ try{ return new Date(ts).toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'}); }catch(e){ return ''; } }
@@ -509,8 +657,10 @@
     if(name!=='archivo') unlocked=false;      // leaving Archivo re-locks it
     $('page-scan').hidden = name!=='scan';
     $('page-archivo').hidden = name!=='archivo';
+    $('page-agenda').hidden = name!=='agenda';
     document.querySelectorAll('.tab').forEach(t=> t.classList.toggle('active', t.dataset.page===name));
     if(name==='archivo'){ if(unlocked) doUnlock(); else { showLock(); autoFace(); } }
+    if(name==='agenda') renderAgenda();
     window.scrollTo(0,0);
   }
   // Re-lock when the app is backgrounded / closed / hidden
@@ -597,6 +747,115 @@
     const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name;
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),5000); showToast('✓ PDF listo');
   }
+
+  /* ================= AGENDA (imported from IN2) ================= */
+  let entries=[], shopping=[], errands=[];
+  let agFilter='all', editEntryId=null, entryType='note';
+  const ETYPES=[{k:'note',emoji:'📝',label:'Nota',plural:'Notas'},{k:'reminder',emoji:'⏰',label:'Recordatorio',plural:'Recordatorios'},{k:'calendar',emoji:'📅',label:'Cita',plural:'Citas'},{k:'finance',emoji:'💰',label:'Finanza',plural:'Finanzas'}];
+  const EMAP=Object.fromEntries(ETYPES.map(t=>[t.k,t]));
+  const CATS=['General','Médico / Salud','Finanzas','Lugares','Personal','Compras','Importante'];
+  function saveAgenda(){ idbSet('agenda',entries); try{ localStorage.setItem('ceo_agenda',JSON.stringify(entries)); }catch(e){} }
+  function saveShopping(){ idbSet('shopping',shopping); try{ localStorage.setItem('ceo_shopping',JSON.stringify(shopping)); }catch(e){} }
+  function saveErrands(){ idbSet('errands',errands); try{ localStorage.setItem('ceo_errands',JSON.stringify(errands)); }catch(e){} }
+  function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function entryDay(e){ return (e.date && e.date.length>=10) ? e.date.slice(0,10) : (e.createdAt||'').slice(0,10); }
+  function fmtDay(ymd){ try{ const p=(ymd||'').split('-').map(Number); if(p.length<3||!p[0]) return ''; return new Date(p[0],p[1]-1,p[2]).toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'}); }catch(e){ return ''; } }
+  function greetText(){ const h=new Date().getHours(); return (h<12?'Buenos días':(h<19?'Buenas tardes':'Buenas noches'))+', Carmen'; }
+
+  function renderAgenda(){
+    $('greetIcon').textContent = new Date().getHours()<19?'🌤️':'🌙';
+    $('greetText').textContent = greetText();
+    const notDone=entries.filter(e=>!e.done), done=entries.filter(e=>e.done), t=todayStr();
+    const today=notDone.filter(e=>entryDay(e)===t), up=notDone.filter(e=>entryDay(e)!==t);
+    $('statTodo').textContent='Por hacer: '+notDone.length;
+    $('statDone').textContent='Hechas: '+done.length;
+    $('statToday').textContent='Hoy: '+today.length;
+    $('todayN').textContent=today.length; $('upN').textContent=up.length;
+    const build=(arr,cls,empty)=>{ if(!arr.length) return '<div class="more">'+empty+'</div>'; return arr.slice(0,5).map(()=>'<div class="mini-row"><span class="dot '+cls+'"></span><span class="rt"></span></div>').join('')+(arr.length>5?'<div class="more">+'+(arr.length-5)+' más</div>':''); };
+    $('todayList').innerHTML=build(today,'','Nada para hoy'); $('upList').innerHTML=build(up,'dot2','Nada próximo');
+    $('todayList').querySelectorAll('.rt').forEach((n,i)=>{ n.textContent=today[i].title; });
+    $('upList').querySelectorAll('.rt').forEach((n,i)=>{ n.textContent=up[i].title; });
+    document.querySelectorAll('#agTabs .chip').forEach(b=>{ const tt=b.dataset.t; const n=tt==='all'?entries.length:entries.filter(e=>e.type===tt).length; b.querySelector('b').textContent=n; b.classList.toggle('active', tt===agFilter); });
+    $('agLabel').textContent = agFilter==='all'?'Todo':EMAP[agFilter].plural;
+    const shown = entries.filter(e=> agFilter==='all'||e.type===agFilter);
+    $('agCount').textContent = shown.length+(shown.length===1?' cosa':' cosas');
+    const list=$('agList'); list.innerHTML='';
+    if(!shown.length){ list.innerHTML='<div class="empty"><div class="big">📭</div><p>Nada aún. Toca «Agregar» para empezar.</p></div>'; return; }
+    shown.forEach(e=>{
+      const ty=EMAP[e.type]||EMAP.note;
+      const card=document.createElement('div'); card.className='entry'+(e.done?' done':'');
+      card.innerHTML='<div class="etype e-'+e.type+'">'+ty.emoji+'</div>'+
+        '<div class="ebody"><div class="etitle"></div><div class="edet"></div><div class="emeta"><span class="edate"></span></div></div>'+
+        '<div class="eacts"><button class="ea" data-a="edit" aria-label="Editar">✎</button><button class="ea" data-a="done" aria-label="Hecho">✓</button><button class="ea" data-a="del" aria-label="Borrar">✕</button></div>';
+      card.querySelector('.etitle').textContent=e.title;
+      card.querySelector('.edet').textContent=e.details||'';
+      const meta=card.querySelector('.emeta');
+      meta.querySelector('.edate').textContent=fmtDay(entryDay(e))+(e.time?' · '+e.time:'');
+      if(e.category){ const c=document.createElement('span'); c.className='mini'; c.textContent=e.category; meta.appendChild(c); }
+      if(e.priority){ const p=document.createElement('span'); p.className='mini'; p.textContent=e.priority; meta.appendChild(p); }
+      card.querySelector('[data-a="edit"]').onclick=()=>openEntry(e.id);
+      card.querySelector('[data-a="done"]').onclick=()=>{ e.done=!e.done; saveAgenda(); renderAgenda(); };
+      card.querySelector('[data-a="del"]').onclick=()=>{ if(confirm('¿Eliminar esto?')){ entries=entries.filter(x=>x.id!==e.id); saveAgenda(); renderAgenda(); } };
+      list.appendChild(card);
+    });
+  }
+
+  $('greetCard').onclick=()=>{ const ex=$('greetExpand'); ex.hidden=!ex.hidden; $('greetCard').classList.toggle('open', !ex.hidden); };
+  document.querySelectorAll('#agTabs .chip').forEach(b=> b.onclick=()=>{ agFilter=b.dataset.t; renderAgenda(); });
+
+  function fillCats(sel){
+    const s=$('efCat'); s.innerHTML='';
+    CATS.concat(['+ Crear categoría']).forEach(c=>{ const o=document.createElement('option'); o.value=(c==='+ Crear categoría'?'__custom__':c); o.textContent=c; s.appendChild(o); });
+    if(sel && !CATS.includes(sel)){ s.value='__custom__'; $('efCatCustom').hidden=false; $('efCatCustom').value=sel; }
+    else { s.value=sel||'General'; $('efCatCustom').hidden=true; $('efCatCustom').value=''; }
+  }
+  $('efCat').onchange=()=>{ $('efCatCustom').hidden = $('efCat').value!=='__custom__'; };
+  document.querySelectorAll('#efType .chip').forEach(b=> b.onclick=()=>{ entryType=b.dataset.k; document.querySelectorAll('#efType .chip').forEach(x=>x.classList.remove('active')); b.classList.add('active'); $('efFormTitle').textContent=(editEntryId?'Editar ':'Nueva ')+EMAP[entryType].label.toLowerCase(); });
+  function openEntry(id){
+    editEntryId=id||null; const e = id? entries.find(x=>x.id===id):null;
+    entryType = e? e.type:'note';
+    document.querySelectorAll('#efType .chip').forEach(b=>b.classList.toggle('active', b.dataset.k===entryType));
+    $('efTitle').value=e?e.title:''; $('efDetails').value=e?(e.details||''):'';
+    $('efDate').value=e&&e.date?e.date:''; $('efTime').value=e&&e.time?e.time:''; $('efPrio').value=e&&e.priority?e.priority:'';
+    fillCats(e?e.category:'General');
+    $('efFormTitle').textContent=(e?'Editar ':'Nueva ')+EMAP[entryType].label.toLowerCase();
+    $('efSave').textContent=e?'Actualizar':'Guardar';
+    openSheet('entryForm'); setTimeout(()=>$('efTitle').focus(),300);
+  }
+  $('addEntryBtn').onclick=()=>openEntry(null);
+  $('efCancel').onclick=()=>closeSheet('entryForm');
+  $('efSave').onclick=()=>{
+    const title=$('efTitle').value.trim(); if(!title){ $('efTitle').focus(); return; }
+    const cat = $('efCat').value==='__custom__' ? ($('efCatCustom').value.trim()||'') : $('efCat').value;
+    const data={ type:entryType, title, details:$('efDetails').value.trim(), category:cat, date:$('efDate').value, time:$('efTime').value, priority:$('efPrio').value };
+    if(editEntryId){ const e=entries.find(x=>x.id===editEntryId); if(e) Object.assign(e,data); }
+    else { entries.unshift(Object.assign({id:Date.now(), createdAt:new Date().toISOString(), done:false}, data)); }
+    saveAgenda(); renderAgenda(); closeSheet('entryForm'); showToast('✓ Guardado');
+  };
+
+  function renderList(arr, el, save){
+    el.innerHTML='';
+    if(!arr.length){ el.innerHTML='<div class="md-empty">Vacío. Agrega algo arriba.</div>'; return; }
+    arr.forEach(it=>{
+      const row=document.createElement('div'); row.className='mdrow'+(it.done?' on':'');
+      row.innerHTML='<button class="ck" aria-label="Marcar">'+(it.done?'✓':'')+'</button><span class="nm"></span><button class="rm" aria-label="Borrar">✕</button>';
+      row.querySelector('.nm').textContent=it.name;
+      row.querySelector('.ck').onclick=()=>{ it.done=!it.done; save(); renderMiDia(); };
+      row.querySelector('.rm').onclick=()=>{ const i=arr.indexOf(it); if(i>=0) arr.splice(i,1); save(); renderMiDia(); };
+      el.appendChild(row);
+    });
+  }
+  function renderMiDia(){ renderList(shopping, $('shopList'), saveShopping); renderList(errands, $('errList'), saveErrands); }
+  function addItem(input, arr, save){ const v=input.value.trim(); if(!v) return; arr.push({id:'i'+Date.now(), name:v, done:false}); input.value=''; save(); renderMiDia(); }
+  $('miDiaBtn').onclick=()=>{ renderMiDia(); openSheet('miDia'); };
+  $('miDiaClose').onclick=()=>closeSheet('miDia');
+  $('shopAdd').onclick=()=>addItem($('shopInput'), shopping, saveShopping);
+  $('errAdd').onclick=()=>addItem($('errInput'), errands, saveErrands);
+  $('shopInput').addEventListener('keydown',e=>{ if(e.key==='Enter') addItem($('shopInput'),shopping,saveShopping); });
+  $('errInput').addEventListener('keydown',e=>{ if(e.key==='Enter') addItem($('errInput'),errands,saveErrands); });
+  $('clearShop').onclick=()=>{ if(shopping.length && confirm('¿Borrar toda la lista de compras?')){ shopping.length=0; saveShopping(); renderMiDia(); } };
+  $('clearErr').onclick=()=>{ if(errands.length && confirm('¿Borrar todos los mandados?')){ errands.length=0; saveErrands(); renderMiDia(); } };
+  ['entryForm','miDia'].forEach(id=> $(id).addEventListener('click', e=>{ if(e.target.id===id) closeSheet(id); }));
 
   initStore();
 
