@@ -486,6 +486,7 @@
     setTimeout(()=> doUnlock(), 1400);
   }
   async function tryBio(){ $('lockSub').textContent='Leyendo tu cara…'; try{ if(await bioUnlock()) doUnlock(); else $('lockSub').textContent='Usa Face ID o tu PIN'; }catch(e){ $('lockSub').textContent='Usa Face ID o tu PIN'; } }
+  function autoFace(){ try{ if(!unlocked && hasPin() && bioIdVal) tryBio(); }catch(e){} }   // one tap into Archivo starts Face ID
   document.querySelectorAll('#keypad button').forEach(b=> b.onclick=()=> lockPress(b.dataset.k));
   $('faceBtn').onclick = ()=> tryBio();
   $('bioEnrollBtn').onclick = async ()=>{ let ok=false; try{ await bioEnroll(); ok=true; }catch(e){} showDone(ok); };
@@ -499,7 +500,7 @@
     $('page-scan').hidden = name!=='scan';
     $('page-archivo').hidden = name!=='archivo';
     document.querySelectorAll('.tab').forEach(t=> t.classList.toggle('active', t.dataset.page===name));
-    if(name==='archivo'){ if(unlocked) doUnlock(); else showLock(); }
+    if(name==='archivo'){ if(unlocked) doUnlock(); else { showLock(); autoFace(); } }
     window.scrollTo(0,0);
   }
   // Re-lock when the app is backgrounded / closed / hidden
