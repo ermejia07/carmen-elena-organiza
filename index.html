@@ -182,6 +182,7 @@
   /* ---- Agenda ---- */
   .agenda-wrap{padding:18px 18px 8px;display:flex;flex-direction:column;gap:14px}
   .greet{background:var(--teal);color:#fff;border-radius:18px;padding:16px 18px;box-shadow:var(--shadow);cursor:pointer}
+  .greet-eyebrow{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;opacity:.8;margin-bottom:4px}
   .greet-top{display:flex;align-items:center;gap:9px;font-size:18px}
   .greet-top b{font-family:Georgia,serif;font-weight:700;flex:1}
   .greet-top .gchev{opacity:.85;font-size:20px;transition:transform .15s}
@@ -230,7 +231,17 @@
   .mdrow .nm{flex:1;font-size:15px}
   .mdrow.on .nm{text-decoration:line-through;color:var(--ink-soft)}
   .mdrow .rm{appearance:none;border:none;background:transparent;color:var(--danger);cursor:pointer;font-size:16px;padding:2px 6px}
-  .md-empty{font-size:13px;color:var(--ink-soft);padding:4px 2px}
+  .md-empty{font-size:13px;color:var(--ink-soft);padding:10px 2px;text-align:center}
+  #comprasView{display:flex;flex-direction:column;gap:10px}
+  .ml{border:1px solid var(--line);border-radius:14px;background:var(--sand-2);overflow:hidden;box-shadow:var(--shadow)}
+  .ml-head{display:flex;align-items:center;gap:10px;padding:13px 14px;cursor:pointer}
+  .ml-name{flex:1;font-weight:640;font-size:15.5px}
+  .ml-count{font-size:12px;color:var(--ink-soft);background:var(--line);border-radius:100px;padding:2px 9px;font-variant-numeric:tabular-nums}
+  .ml-del{appearance:none;border:none;background:transparent;cursor:pointer;font-size:15px;padding:2px 4px}
+  .ml-chev{color:var(--ink-soft);font-size:18px;transition:transform .15s}
+  .ml.open .ml-chev{transform:rotate(90deg)}
+  .ml-body{padding:0 12px 12px;display:flex;flex-direction:column;gap:8px}
+  .ml-items{display:flex;flex-direction:column;gap:6px}
 
   .toast{ position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);
     background:var(--good);color:#fff;font-weight:600;font-size:15px; padding:13px 22px;border-radius:100px;box-shadow:var(--shadow-lift);
@@ -319,6 +330,7 @@
     <section class="page" id="page-agenda" hidden>
       <div class="agenda-wrap">
         <div class="greet" id="greetCard">
+          <div class="greet-eyebrow">Mi Día</div>
           <div class="greet-top"><span id="greetIcon">🌤️</span><b id="greetText">Buen día</b><span class="gchev">›</span></div>
           <div class="greet-status"><span id="statTodo">Por hacer: 0</span><span id="statDone">Hechas: 0</span><span id="statToday">Hoy: 0</span></div>
           <div class="greet-expand" id="greetExpand" hidden>
@@ -336,16 +348,20 @@
             <button class="chip" data-t="reminder">⏰ Recordatorios <b>0</b></button>
             <button class="chip" data-t="calendar">📅 Citas <b>0</b></button>
             <button class="chip" data-t="finance">💰 Finanzas <b>0</b></button>
+            <button class="chip" data-t="compras">🛒 Compras <b>0</b></button>
           </div>
         </div>
 
-        <div class="ag-actions">
+        <div class="ag-actions" id="agActions">
           <button class="btn btn-primary" id="addEntryBtn">➕ Agregar</button>
-          <button class="btn btn-ghost" id="miDiaBtn">🗺️ Mi Día</button>
         </div>
 
         <div class="sec-head"><h2 id="agLabel">Todo</h2><span class="count" id="agCount">0</span></div>
         <div class="list" id="agList"></div>
+        <div id="comprasView" hidden>
+          <div class="mdadd"><input type="text" id="newListInput" placeholder="Nueva lista (ej: Compras del Mercado)" autocomplete="off"><button class="mdadd-btn" id="newListAdd" aria-label="Crear lista">＋</button></div>
+          <div id="listsWrap"></div>
+        </div>
       </div>
     </section>
   </main>
@@ -455,25 +471,6 @@
   </div>
 </div>
 
-<!-- Agenda: Mi Día (two simple checklists) -->
-<div class="overlay" id="miDia">
-  <div class="sheet">
-    <h2>Mi Día</h2>
-    <p class="sub">Tus listas rápidas</p>
-    <div class="mdblock">
-      <div class="mdhead"><h3>🛒 Lista de compras</h3><button class="linkbtn" id="clearShop">Borrar todo</button></div>
-      <div class="mdadd"><input type="text" id="shopInput" placeholder="Agregar…" autocomplete="off"><button class="mdadd-btn" id="shopAdd" aria-label="Agregar">＋</button></div>
-      <div id="shopList" class="mdlist"></div>
-    </div>
-    <div class="mdblock">
-      <div class="mdhead"><h3>🗺️ Mandados</h3><button class="linkbtn" id="clearErr">Borrar todo</button></div>
-      <div class="mdadd"><input type="text" id="errInput" placeholder="Agregar…" autocomplete="off"><button class="mdadd-btn" id="errAdd" aria-label="Agregar">＋</button></div>
-      <div id="errList" class="mdlist"></div>
-    </div>
-    <div class="btn-row"><button class="btn btn-primary" id="miDiaClose">Cerrar</button></div>
-  </div>
-</div>
-
 <div class="toast" id="toast">✓ Documento guardado</div>
 
 <script>
@@ -521,8 +518,7 @@
     pinHashVal = await idbGet('pin'); if(pinHashVal==null){ pinHashVal = localStorage.getItem(PIN_KEY)||null; if(pinHashVal) idbSet('pin',pinHashVal); }
     bioIdVal = await idbGet('bio'); if(bioIdVal==null){ bioIdVal = localStorage.getItem(BIO_KEY)||null; if(bioIdVal) idbSet('bio',bioIdVal); }
     entries = (await idbGet('agenda'))||[]; if(!entries.length){ try{ const ls=localStorage.getItem('ceo_agenda'); if(ls) entries=JSON.parse(ls); }catch(e){} }
-    shopping = (await idbGet('shopping'))||[]; if(!shopping.length){ try{ const ls=localStorage.getItem('ceo_shopping'); if(ls) shopping=JSON.parse(ls); }catch(e){} }
-    errands = (await idbGet('errands'))||[]; if(!errands.length){ try{ const ls=localStorage.getItem('ceo_errands'); if(ls) errands=JSON.parse(ls); }catch(e){} }
+    lists = (await idbGet('midia'))||[]; if(!lists.length){ try{ const ls=localStorage.getItem('ceo_midia'); if(ls) lists=JSON.parse(ls); }catch(e){} }
     refresh();   // show the archive list if it happens to be open (it renders on unlock otherwise)
   }
   function fmtDate(ts){ try{ return new Date(ts).toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'}); }catch(e){ return ''; } }
@@ -749,14 +745,13 @@
   }
 
   /* ================= AGENDA (imported from IN2) ================= */
-  let entries=[], shopping=[], errands=[];
+  let entries=[], lists=[], focusListId=null;
   let agFilter='all', editEntryId=null, entryType='note';
   const ETYPES=[{k:'note',emoji:'📝',label:'Nota',plural:'Notas'},{k:'reminder',emoji:'⏰',label:'Recordatorio',plural:'Recordatorios'},{k:'calendar',emoji:'📅',label:'Cita',plural:'Citas'},{k:'finance',emoji:'💰',label:'Finanza',plural:'Finanzas'}];
   const EMAP=Object.fromEntries(ETYPES.map(t=>[t.k,t]));
   const CATS=['General','Médico / Salud','Finanzas','Lugares','Personal','Compras','Importante'];
   function saveAgenda(){ idbSet('agenda',entries); try{ localStorage.setItem('ceo_agenda',JSON.stringify(entries)); }catch(e){} }
-  function saveShopping(){ idbSet('shopping',shopping); try{ localStorage.setItem('ceo_shopping',JSON.stringify(shopping)); }catch(e){} }
-  function saveErrands(){ idbSet('errands',errands); try{ localStorage.setItem('ceo_errands',JSON.stringify(errands)); }catch(e){} }
+  function saveLists(){ idbSet('midia',lists); try{ localStorage.setItem('ceo_midia',JSON.stringify(lists)); }catch(e){} }
   function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
   function entryDay(e){ return (e.date && e.date.length>=10) ? e.date.slice(0,10) : (e.createdAt||'').slice(0,10); }
   function fmtDay(ymd){ try{ const p=(ymd||'').split('-').map(Number); if(p.length<3||!p[0]) return ''; return new Date(p[0],p[1]-1,p[2]).toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'}); }catch(e){ return ''; } }
@@ -775,7 +770,12 @@
     $('todayList').innerHTML=build(today,'','Nada para hoy'); $('upList').innerHTML=build(up,'dot2','Nada próximo');
     $('todayList').querySelectorAll('.rt').forEach((n,i)=>{ n.textContent=today[i].title; });
     $('upList').querySelectorAll('.rt').forEach((n,i)=>{ n.textContent=up[i].title; });
-    document.querySelectorAll('#agTabs .chip').forEach(b=>{ const tt=b.dataset.t; const n=tt==='all'?entries.length:entries.filter(e=>e.type===tt).length; b.querySelector('b').textContent=n; b.classList.toggle('active', tt===agFilter); });
+    document.querySelectorAll('#agTabs .chip').forEach(b=>{ const tt=b.dataset.t; let n; if(tt==='all') n=entries.length; else if(tt==='compras') n=lists.length; else n=entries.filter(e=>e.type===tt).length; b.querySelector('b').textContent=n; b.classList.toggle('active', tt===agFilter); });
+    const isCompras = agFilter==='compras';
+    $('agActions').hidden = isCompras;
+    $('agList').hidden = isCompras;
+    $('comprasView').hidden = !isCompras;
+    if(isCompras){ $('agLabel').textContent='Compras'; $('agCount').textContent=lists.length+(lists.length===1?' lista':' listas'); renderCompras(); return; }
     $('agLabel').textContent = agFilter==='all'?'Todo':EMAP[agFilter].plural;
     const shown = entries.filter(e=> agFilter==='all'||e.type===agFilter);
     $('agCount').textContent = shown.length+(shown.length===1?' cosa':' cosas');
@@ -833,29 +833,39 @@
     saveAgenda(); renderAgenda(); closeSheet('entryForm'); showToast('✓ Guardado');
   };
 
-  function renderList(arr, el, save){
-    el.innerHTML='';
-    if(!arr.length){ el.innerHTML='<div class="md-empty">Vacío. Agrega algo arriba.</div>'; return; }
-    arr.forEach(it=>{
-      const row=document.createElement('div'); row.className='mdrow'+(it.done?' on':'');
-      row.innerHTML='<button class="ck" aria-label="Marcar">'+(it.done?'✓':'')+'</button><span class="nm"></span><button class="rm" aria-label="Borrar">✕</button>';
-      row.querySelector('.nm').textContent=it.name;
-      row.querySelector('.ck').onclick=()=>{ it.done=!it.done; save(); renderMiDia(); };
-      row.querySelector('.rm').onclick=()=>{ const i=arr.indexOf(it); if(i>=0) arr.splice(i,1); save(); renderMiDia(); };
-      el.appendChild(row);
+  function renderCompras(){
+    const wrap=$('listsWrap'); wrap.innerHTML='';
+    if(!lists.length){ wrap.innerHTML='<div class="md-empty">Aún no tienes listas. Crea una arriba (ej: «Bancos» o «Compras del Mercado»).</div>'; return; }
+    lists.forEach(L=>{
+      if(!Array.isArray(L.items)) L.items=[];
+      const el=document.createElement('div'); el.className='ml'+(L.open?' open':''); el.dataset.id=L.id;
+      el.innerHTML='<div class="ml-head"><span class="ml-name"></span><span class="ml-count">'+L.items.length+'</span><button class="ml-del" aria-label="Borrar lista">🗑</button><span class="ml-chev">›</span></div>'+
+        '<div class="ml-body"'+(L.open?'':' hidden')+'><div class="mdadd"><input type="text" class="ml-input" placeholder="Agregar…" autocomplete="off"><button class="mdadd-btn ml-add" aria-label="Agregar">＋</button></div><div class="ml-items"></div>'+(L.items.length?'<button class="linkbtn ml-clear">Borrar todo</button>':'')+'</div>';
+      el.querySelector('.ml-name').textContent=L.name;
+      el.querySelector('.ml-head').onclick=(e)=>{ if(e.target.closest('.ml-del')) return; L.open=!L.open; saveLists(); renderCompras(); };
+      el.querySelector('.ml-del').onclick=(e)=>{ e.stopPropagation(); if(confirm('¿Borrar la lista «'+L.name+'»?')){ lists=lists.filter(x=>x.id!==L.id); saveLists(); renderCompras(); } };
+      const itemsEl=el.querySelector('.ml-items');
+      L.items.forEach(it=>{
+        const row=document.createElement('div'); row.className='mdrow'+(it.done?' on':'');
+        row.innerHTML='<button class="ck" aria-label="Marcar">'+(it.done?'✓':'')+'</button><span class="nm"></span><button class="rm" aria-label="Borrar">✕</button>';
+        row.querySelector('.nm').textContent=it.name;
+        row.querySelector('.ck').onclick=()=>{ it.done=!it.done; saveLists(); renderCompras(); };
+        row.querySelector('.rm').onclick=()=>{ const i=L.items.indexOf(it); if(i>=0) L.items.splice(i,1); saveLists(); renderCompras(); };
+        itemsEl.appendChild(row);
+      });
+      const inp=el.querySelector('.ml-input');
+      const add=()=>{ const v=inp.value.trim(); if(!v) return; L.items.push({id:'i'+Date.now(),name:v,done:false}); L.open=true; focusListId=L.id; saveLists(); renderCompras(); };
+      el.querySelector('.ml-add').onclick=add;
+      inp.addEventListener('keydown',e=>{ if(e.key==='Enter') add(); });
+      const clr=el.querySelector('.ml-clear'); if(clr) clr.onclick=()=>{ if(confirm('¿Borrar todo en «'+L.name+'»?')){ L.items=[]; saveLists(); renderCompras(); } };
+      wrap.appendChild(el);
     });
+    if(focusListId){ const fi=wrap.querySelector('.ml[data-id="'+focusListId+'"] .ml-input'); if(fi) fi.focus(); focusListId=null; }
   }
-  function renderMiDia(){ renderList(shopping, $('shopList'), saveShopping); renderList(errands, $('errList'), saveErrands); }
-  function addItem(input, arr, save){ const v=input.value.trim(); if(!v) return; arr.push({id:'i'+Date.now(), name:v, done:false}); input.value=''; save(); renderMiDia(); }
-  $('miDiaBtn').onclick=()=>{ renderMiDia(); openSheet('miDia'); };
-  $('miDiaClose').onclick=()=>closeSheet('miDia');
-  $('shopAdd').onclick=()=>addItem($('shopInput'), shopping, saveShopping);
-  $('errAdd').onclick=()=>addItem($('errInput'), errands, saveErrands);
-  $('shopInput').addEventListener('keydown',e=>{ if(e.key==='Enter') addItem($('shopInput'),shopping,saveShopping); });
-  $('errInput').addEventListener('keydown',e=>{ if(e.key==='Enter') addItem($('errInput'),errands,saveErrands); });
-  $('clearShop').onclick=()=>{ if(shopping.length && confirm('¿Borrar toda la lista de compras?')){ shopping.length=0; saveShopping(); renderMiDia(); } };
-  $('clearErr').onclick=()=>{ if(errands.length && confirm('¿Borrar todos los mandados?')){ errands.length=0; saveErrands(); renderMiDia(); } };
-  ['entryForm','miDia'].forEach(id=> $(id).addEventListener('click', e=>{ if(e.target.id===id) closeSheet(id); }));
+  function addList(){ const v=$('newListInput').value.trim(); if(!v) return; lists.push({id:'L'+Date.now(),name:v,open:true,items:[]}); $('newListInput').value=''; saveLists(); renderCompras(); }
+  $('newListAdd').onclick=addList;
+  $('newListInput').addEventListener('keydown',e=>{ if(e.key==='Enter') addList(); });
+  $('entryForm').addEventListener('click', e=>{ if(e.target.id==='entryForm') closeSheet('entryForm'); });
 
   initStore();
 
