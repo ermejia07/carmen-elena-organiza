@@ -342,14 +342,31 @@
   const FMAP = Object.fromEntries(FINDERS.map(f=>[f.key,f]));
   const fLabel = k => (FMAP[k] ? FMAP[k].emoji+' '+k : k);
 
-  let docs = load();
+  let docs = [];
+  let pinHashVal = null, bioIdVal = null;
   let pendingImg=null, viewingId=null;
   let pendingFinders=new Set(), viewerFinders=new Set(), orgSelected=new Set();
   let searchText='', unlocked=false, tempPin=null;
 
-  function load(){ try{ return (JSON.parse(localStorage.getItem(KEY))||[]).map(normalize); }catch(e){ return []; } }
-  function save(){ try{ localStorage.setItem(KEY, JSON.stringify(docs)); }catch(e){} }
+  // ---- Durable storage: IndexedDB (primary) + localStorage (backup) ----
+  let DB=null;
+  function idbOpen(){ return new Promise(res=>{ try{ const r=indexedDB.open('ceo-db',1);
+    r.onupgradeneeded=()=>{ try{ r.result.createObjectStore('kv'); }catch(e){} };
+    r.onsuccess=()=>res(r.result); r.onerror=()=>res(null); }catch(e){ res(null); } }); }
+  function idbGet(k){ return new Promise(res=>{ if(!DB) return res(null); try{ const q=DB.transaction('kv','readonly').objectStore('kv').get(k); q.onsuccess=()=>res(q.result==null?null:q.result); q.onerror=()=>res(null); }catch(e){ res(null); } }); }
+  function idbSet(k,v){ return new Promise(res=>{ if(!DB) return res(false); try{ const q=DB.transaction('kv','readwrite').objectStore('kv').put(v,k); q.onsuccess=()=>res(true); q.onerror=()=>res(false); }catch(e){ res(false); } }); }
   function normalize(d){ if(!Array.isArray(d.finders)){ d.finders=[]; if(d.category) d.finders.push(d.category==='Dinero'?'Bancos':d.category); } return d; }
+  function save(){ idbSet('docs',docs); try{ localStorage.setItem(KEY, JSON.stringify(docs)); }catch(e){} }
+  async function initStore(){
+    DB = await idbOpen();
+    if(navigator.storage && navigator.storage.persist){ try{ await navigator.storage.persist(); }catch(e){} }
+    let d = await idbGet('docs');
+    if(d==null){ try{ const ls=localStorage.getItem(KEY); if(ls) d=JSON.parse(ls); }catch(e){} }
+    docs = (d||[]).map(normalize); if(d!=null) idbSet('docs',docs);
+    pinHashVal = await idbGet('pin'); if(pinHashVal==null){ pinHashVal = localStorage.getItem(PIN_KEY)||null; if(pinHashVal) idbSet('pin',pinHashVal); }
+    bioIdVal = await idbGet('bio'); if(bioIdVal==null){ bioIdVal = localStorage.getItem(BIO_KEY)||null; if(bioIdVal) idbSet('bio',bioIdVal); }
+    renderScan();
+  }
   function fmtDate(ts){ try{ return new Date(ts).toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'}); }catch(e){ return ''; } }
 
   /* ---- Endless one-line pill row ---- */
@@ -403,9 +420,9 @@
 
   /* ---- Lock (PIN + optional Face ID / biometrics) ---- */
   function hashPin(s){ let h=5381; for(let i=0;i<s.length;i++) h=((h<<5)+h+s.charCodeAt(i))>>>0; return 'h'+h; }
-  const hasPin = ()=> !!localStorage.getItem(PIN_KEY);
-  const setPin = p => localStorage.setItem(PIN_KEY, hashPin(p));
-  const checkPin = p => localStorage.getItem(PIN_KEY)===hashPin(p);
+  const hasPin = ()=> !!pinHashVal;
+  const setPin = p => { pinHashVal=hashPin(p); idbSet('pin',pinHashVal); try{ localStorage.setItem(PIN_KEY,pinHashVal); }catch(e){} };
+  const checkPin = p => pinHashVal===hashPin(p);
   const b64 = buf => btoa(String.fromCharCode.apply(null, new Uint8Array(buf)));
   const unb64 = s => Uint8Array.from(atob(s), c=>c.charCodeAt(0));
   async function bioAvailable(){ try{ return !!(window.isSecureContext && window.PublicKeyCredential && await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()); }catch(e){ return false; } }
@@ -415,10 +432,10 @@
       user:{id:uid,name:'carmen',displayName:'Carmen Elena'},
       pubKeyCredParams:[{type:'public-key',alg:-7},{type:'public-key',alg:-257}],
       authenticatorSelection:{authenticatorAttachment:'platform',userVerification:'required'}, timeout:60000 }});
-    localStorage.setItem(BIO_KEY, b64(cred.rawId)); return true;
+    bioIdVal = b64(cred.rawId); idbSet('bio',bioIdVal); try{ localStorage.setItem(BIO_KEY,bioIdVal); }catch(e){} return true;
   }
   async function bioUnlock(){
-    const id=localStorage.getItem(BIO_KEY); if(!id) return false;
+    const id=bioIdVal; if(!id) return false;
     const ch=crypto.getRandomValues(new Uint8Array(16));
     const cred=await navigator.credentials.get({publicKey:{ challenge:ch,
       allowCredentials:[{type:'public-key',id:unb64(id)}], userVerification:'required', timeout:60000 }});
@@ -435,7 +452,7 @@
     else { lockMode='setup1'; $('lockTitle').textContent='Protege tus archivos'; $('lockSub').textContent='Crea un PIN de 4 números'; $('resetWrap').hidden=true; }
     drawDots();
     (async()=>{
-      const ok = hasPin() && !!localStorage.getItem(BIO_KEY) && await bioAvailable();
+      const ok = hasPin() && !!bioIdVal && await bioAvailable();
       $('kpBio').style.visibility = ok?'visible':'hidden';
       if(ok){ $('faceBtn').hidden=false; $('lockSub').textContent='Usa Face ID o tu PIN'; }
     })();
@@ -473,7 +490,7 @@
   $('faceBtn').onclick = ()=> tryBio();
   $('bioEnrollBtn').onclick = async ()=>{ let ok=false; try{ await bioEnroll(); ok=true; }catch(e){} showDone(ok); };
   $('bioSkipBtn').onclick = ()=> showDone(false);
-  $('resetBtn').onclick = ()=>{ if(confirm('¿Restablecer el bloqueo? Podrás crear un PIN nuevo. Tus documentos NO se borran.')){ localStorage.removeItem(PIN_KEY); localStorage.removeItem(BIO_KEY); showLock(); } };
+  $('resetBtn').onclick = ()=>{ if(confirm('¿Restablecer el bloqueo? Podrás crear un PIN nuevo. Tus documentos NO se borran.')){ pinHashVal=null; bioIdVal=null; idbSet('pin',null); idbSet('bio',null); try{ localStorage.removeItem(PIN_KEY); localStorage.removeItem(BIO_KEY); }catch(e){} showLock(); } };
   $('relockBtn').onclick = ()=> showLock();
 
   /* ---- Pages ---- */
@@ -569,6 +586,8 @@
     const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name;
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),5000); showToast('✓ PDF listo');
   }
+
+  initStore();
 
   // Always load fresh while we're iterating: remove any old service worker + offline caches.
   if('serviceWorker' in navigator){ navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())).catch(()=>{}); }
