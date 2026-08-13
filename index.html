@@ -350,22 +350,32 @@
 
   // ---- Durable storage: IndexedDB (primary) + localStorage (backup) ----
   let DB=null;
-  function idbOpen(){ return new Promise(res=>{ try{ const r=indexedDB.open('ceo-db',1);
-    r.onupgradeneeded=()=>{ try{ r.result.createObjectStore('kv'); }catch(e){} };
+  function idbOpen(){ return new Promise(res=>{ try{ const r=indexedDB.open('ceo-db',2);
+    r.onupgradeneeded=()=>{ const db=r.result;
+      try{ if(!db.objectStoreNames.contains('kv')) db.createObjectStore('kv'); }catch(e){}
+      try{ if(!db.objectStoreNames.contains('docs')) db.createObjectStore('docs',{keyPath:'id'}); }catch(e){} };
     r.onsuccess=()=>res(r.result); r.onerror=()=>res(null); }catch(e){ res(null); } }); }
   function idbGet(k){ return new Promise(res=>{ if(!DB) return res(null); try{ const q=DB.transaction('kv','readonly').objectStore('kv').get(k); q.onsuccess=()=>res(q.result==null?null:q.result); q.onerror=()=>res(null); }catch(e){ res(null); } }); }
   function idbSet(k,v){ return new Promise(res=>{ if(!DB) return res(false); try{ const q=DB.transaction('kv','readwrite').objectStore('kv').put(v,k); q.onsuccess=()=>res(true); q.onerror=()=>res(false); }catch(e){ res(false); } }); }
   function normalize(d){ if(!Array.isArray(d.finders)){ d.finders=[]; if(d.category) d.finders.push(d.category==='Dinero'?'Bancos':d.category); } return d; }
-  function save(){ idbSet('docs',docs); try{ localStorage.setItem(KEY, JSON.stringify(docs)); }catch(e){} }
+  // Each document is its OWN record → an atomic write. A crash can never damage
+  // documents already saved; the newest photo is committed the moment you tap Guardar.
+  function putDoc(d){ return new Promise(res=>{ if(!DB) return res(false); try{ const q=DB.transaction('docs','readwrite').objectStore('docs').put(d); q.onsuccess=()=>res(true); q.onerror=()=>res(false); }catch(e){ res(false); } }); }
+  function delDocDb(id){ return new Promise(res=>{ if(!DB) return res(false); try{ const q=DB.transaction('docs','readwrite').objectStore('docs').delete(id); q.onsuccess=()=>res(true); q.onerror=()=>res(false); }catch(e){ res(false); } }); }
+  function getAllDocs(){ return new Promise(res=>{ if(!DB) return res([]); try{ const q=DB.transaction('docs','readonly').objectStore('docs').getAll(); q.onsuccess=()=>res(q.result||[]); q.onerror=()=>res([]); }catch(e){ res([]); } }); }
   async function initStore(){
     DB = await idbOpen();
     if(navigator.storage && navigator.storage.persist){ try{ await navigator.storage.persist(); }catch(e){} }
-    let d = await idbGet('docs');
-    if(d==null){ try{ const ls=localStorage.getItem(KEY); if(ls) d=JSON.parse(ls); }catch(e){} }
-    docs = (d||[]).map(normalize); if(d!=null) idbSet('docs',docs);
+    let arr = await getAllDocs();
+    if(!arr.length){ // one-time migration from older single-array storage
+      let old = await idbGet('docs');
+      if(old==null){ try{ const ls=localStorage.getItem(KEY); if(ls) old=JSON.parse(ls); }catch(e){} }
+      if(Array.isArray(old) && old.length){ for(const d of old){ await putDoc(normalize(d)); } arr=old; }
+    }
+    docs = (arr||[]).map(normalize).sort((a,b)=>(a.date||0)-(b.date||0));
     pinHashVal = await idbGet('pin'); if(pinHashVal==null){ pinHashVal = localStorage.getItem(PIN_KEY)||null; if(pinHashVal) idbSet('pin',pinHashVal); }
     bioIdVal = await idbGet('bio'); if(bioIdVal==null){ bioIdVal = localStorage.getItem(BIO_KEY)||null; if(bioIdVal) idbSet('bio',bioIdVal); }
-    renderScan();
+    refresh();   // show the archive list if it happens to be open (it renders on unlock otherwise)
   }
   function fmtDate(ts){ try{ return new Date(ts).toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'}); }catch(e){ return ''; } }
 
@@ -530,9 +540,9 @@
   };
   $('saveBtn').onclick = ()=>{
     const title=($('titleInput').value||'').trim()||suggestName();
-    docs.push({ id:'d'+Date.now(), title, date:Date.now(), docDate:new Date().toISOString().slice(0,10),
-      sender:'', subject:'', content:'', finders:Array.from(pendingFinders), img:pendingImg });
-    save(); refresh(); closeSheet('naming'); pendingImg=null; showToast('✓ Documento guardado');
+    const d={ id:'d'+Date.now(), title, date:Date.now(), docDate:new Date().toISOString().slice(0,10),
+      sender:'', subject:'', content:'', finders:Array.from(pendingFinders), img:pendingImg };
+    docs.push(d); putDoc(d); refresh(); closeSheet('naming'); pendingImg=null; showToast('✓ Documento guardado');
   };
   $('retakeBtn').onclick = ()=>{ closeSheet('naming'); pendingImg=null; $('fileInput').click(); };
 
@@ -549,10 +559,10 @@
     const d=docs.find(x=>x.id===viewingId); if(!d) return;
     if($('dDate').value) d.docDate=$('dDate').value;
     d.sender=$('dSender').value.trim(); d.subject=$('dSubject').value.trim(); d.content=$('dContent').value.trim();
-    d.finders=Array.from(viewerFinders); save(); refresh(); closeSheet('viewer'); showToast('✓ Cambios guardados');
+    d.finders=Array.from(viewerFinders); putDoc(d); refresh(); closeSheet('viewer'); showToast('✓ Cambios guardados');
   };
   $('delBtn').onclick = ()=>{ if(!confirm('¿Eliminar este documento? No se puede deshacer.')) return;
-    docs=docs.filter(x=>x.id!==viewingId); save(); refresh(); closeSheet('viewer'); showToast('Documento eliminado'); };
+    const rid=viewingId; docs=docs.filter(x=>x.id!==rid); delDocDb(rid); refresh(); closeSheet('viewer'); showToast('Documento eliminado'); };
   $('pdfBtn').onclick = ()=>{ const d=docs.find(x=>x.id===viewingId); if(d) exportPdf(d); };
   $('search').addEventListener('input', e=>{ searchText=e.target.value.trim().toLowerCase(); renderOrganize(); });
 
