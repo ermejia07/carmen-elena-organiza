@@ -433,12 +433,16 @@
 
   /* ---- Pages ---- */
   function switchPage(name){
+    if(name!=='archivo') unlocked=false;      // leaving Archivo re-locks it
     $('page-scan').hidden = name!=='scan';
     $('page-archivo').hidden = name!=='archivo';
     document.querySelectorAll('.tab').forEach(t=> t.classList.toggle('active', t.dataset.page===name));
     if(name==='archivo'){ if(unlocked) doUnlock(); else showLock(); }
     window.scrollTo(0,0);
   }
+  // Re-lock when the app is backgrounded / closed / hidden
+  document.addEventListener('visibilitychange', ()=>{ if(document.hidden){ unlocked=false; if(!$('page-archivo').hidden) showLock(); } });
+  window.addEventListener('pagehide', ()=>{ unlocked=false; });
   document.querySelectorAll('.tab').forEach(t=> t.onclick=()=> switchPage(t.dataset.page));
 
   /* ---- Capture ---- */
