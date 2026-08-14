@@ -75,6 +75,13 @@
     padding:9px 16px;font-size:13px;font-weight:700;color:var(--ink-soft); }
   .priv-badge .lock{color:var(--teal)}
   .backup-row{display:flex;flex-direction:column;align-items:center;gap:4px;margin:-6px auto 18px}
+  .backup-reminder{display:flex;align-items:center;gap:10px;margin:14px 18px 0;background:var(--sand-2);border:1.5px solid var(--coral);border-radius:14px;padding:11px 13px;box-shadow:var(--shadow)}
+  .br-ico{font-size:20px}
+  .br-text{flex:1;display:flex;flex-direction:column;min-width:0}
+  .br-text b{font-size:13.5px}
+  .br-text small{font-size:12px;color:var(--ink-soft)}
+  .br-go{appearance:none;border:none;background:var(--teal);color:#fff;border-radius:100px;padding:8px 14px;font-weight:650;font-size:13px;cursor:pointer;font-family:inherit;flex:none}
+  .br-x{appearance:none;border:none;background:transparent;color:var(--ink-soft);cursor:pointer;font-size:14px;padding:4px;flex:none}
 
   .sec-head{display:flex;align-items:center;gap:10px;padding:0 2px}
   .sec-head h2{font-size:17px;font-weight:700;flex:1}
@@ -300,6 +307,12 @@
   <main>
     <!-- PAGE 1: ESCANEAR (blank) -->
     <section class="page" id="page-scan">
+      <div class="backup-reminder" id="backupReminder" hidden>
+        <span class="br-ico">💾</span>
+        <div class="br-text"><b>Guarda una copia de seguridad</b><small id="brMsg"></small></div>
+        <button class="br-go" id="brGo">Guardar</button>
+        <button class="br-x" id="brDismiss" aria-label="Ahora no">✕</button>
+      </div>
       <div class="scan-stage">
         <button class="scan-fab" id="scanBtn" aria-label="Escanear documento">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -588,6 +601,8 @@
     bioIdVal = await idbGet('bio'); if(bioIdVal==null){ bioIdVal = localStorage.getItem(BIO_KEY)||null; if(bioIdVal) idbSet('bio',bioIdVal); }
     entries = (await idbGet('agenda'))||[]; if(!entries.length){ try{ const ls=localStorage.getItem('ceo_agenda'); if(ls) entries=JSON.parse(ls); }catch(e){} }
     lists = (await idbGet('midia'))||[]; if(!lists.length){ try{ const ls=localStorage.getItem('ceo_midia'); if(ls) lists=JSON.parse(ls); }catch(e){} }
+    lastBackupVal = Number(await idbGet('lastBackup'))||0; if(!lastBackupVal){ try{ lastBackupVal=Number(localStorage.getItem('ceo_lastBackup'))||0; }catch(e){} }
+    maybeShowBackupReminder();
     refresh();   // show the archive list if it happens to be open (it renders on unlock otherwise)
   }
   function fmtDate(ts){ try{ return new Date(ts).toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'}); }catch(e){ return ''; } }
@@ -997,13 +1012,24 @@
 
   /* ---- Backup: export / restore all data to a file ---- */
   function collectBackup(){ return { app:'CEO', v:1, at:new Date().toISOString(), docs:docs, agenda:entries, listas:lists }; }
+  let lastBackupVal=0;
+  function saveLastBackup(ts){ lastBackupVal=ts; idbSet('lastBackup',ts); try{ localStorage.setItem('ceo_lastBackup',String(ts)); }catch(e){} }
+  function backupDone(){ saveLastBackup(Date.now()); $('backupReminder').hidden=true; }
   async function exportBackup(){
     const blob=new Blob([JSON.stringify(collectBackup())],{type:'application/json'});
     const name='CEO-copia-'+todayStr()+'.json';
     const file=new File([blob],name,{type:'application/json'});
-    if(navigator.canShare && navigator.canShare({files:[file]})){ try{ await navigator.share({files:[file],title:'Copia de seguridad CEO'}); return; }catch(e){ if(e.name==='AbortError') return; } }
+    if(navigator.canShare && navigator.canShare({files:[file]})){ try{ await navigator.share({files:[file],title:'Copia de seguridad CEO'}); backupDone(); return; }catch(e){ if(e.name==='AbortError') return; } }
     const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),5000);
-    showToast('✓ Copia guardada');
+    backupDone(); showToast('✓ Copia guardada');
+  }
+  function maybeShowBackupReminder(){
+    const hasData = (docs.length||entries.length||lists.length);
+    const days = lastBackupVal ? (Date.now()-lastBackupVal)/86400000 : Infinity;
+    if(hasData && days>7){
+      $('brMsg').textContent = lastBackupVal ? 'Ha pasado más de una semana desde tu última copia.' : 'Aún no has guardado ninguna copia.';
+      $('backupReminder').hidden=false;
+    } else $('backupReminder').hidden=true;
   }
   function restoreBackup(b){
     if(!b || (!b.docs && !b.agenda && !b.listas)){ alert('Ese archivo no parece una copia de CEO.'); return; }
@@ -1016,6 +1042,8 @@
     showToast('✓ Copia restaurada');
   }
   $('exportBtn').onclick=exportBackup;
+  $('brGo').onclick=exportBackup;
+  $('brDismiss').onclick=()=>{ $('backupReminder').hidden=true; };
   $('importBtn').onclick=()=>$('importFile').click();
   $('importFile').onchange=(e)=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return; const r=new FileReader(); r.onload=()=>{ try{ restoreBackup(JSON.parse(r.result)); }catch(err){ alert('No se pudo leer el archivo de copia.'); } }; r.readAsText(f); };
 
