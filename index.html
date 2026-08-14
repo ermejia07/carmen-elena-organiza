@@ -322,7 +322,12 @@
       <div class="lockscreen" id="lockScreen">
         <div class="lock-emblem">🔒</div>
         <h2 id="lockTitle">Archivo protegido</h2>
-        <p class="lock-sub" id="lockSub">Escribe tu PIN</p>
+        <p class="lock-sub" id="lockSub">¿Qué quieres hacer?</p>
+        <div id="lockChoice" style="display:flex;flex-direction:column;gap:10px;width:260px">
+          <button class="btn btn-primary" id="loginChoiceBtn">🔓 Login (ver documentos)</button>
+          <button class="btn btn-ghost" id="archivarChoiceBtn">📷 Archivar (escanear)</button>
+        </div>
+        <div id="loginArea" hidden style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%">
         <button class="btn btn-primary" id="faceBtn" hidden style="max-width:240px;margin-bottom:4px">🙂 Entrar con Face ID</button>
         <div class="pin-dots" id="pinDots"><i></i><i></i><i></i><i></i></div>
         <p class="lock-msg" id="lockMsg"></p>
@@ -349,6 +354,7 @@
           <button class="btn btn-ghost" id="bioSkipBtn">Ahora no</button>
         </div>
         <div id="resetWrap" hidden style="margin-top:6px"><button class="linkbtn" id="resetBtn">Restablecer bloqueo</button></div>
+        </div><!-- /loginArea -->
       </div>
 
       <div class="archive-wrap" id="archiveBody" hidden>
@@ -660,8 +666,14 @@
   }
   let lockMode='login', entry='', firstPin='';
   function drawDots(){ const d=$('pinDots').children; for(let i=0;i<4;i++) d[i].classList.toggle('on', i<entry.length); }
-  function showLock(){
+  function showLock(){   // choice screen: Login (ver) or Archivar (escanear)
     unlocked=false; $('lockScreen').hidden=false; $('archiveBody').hidden=true;
+    $('lockChoice').hidden=false; $('loginArea').hidden=true;
+    $('lockTitle').textContent='Archivo';
+    $('lockSub').textContent='¿Qué quieres hacer?';
+  }
+  function showLogin(){   // the PIN keypad / Face ID unlock
+    $('lockChoice').hidden=true; $('loginArea').hidden=false;
     entry=''; firstPin='';
     $('lockMsg').textContent=''; $('bioSetup').hidden=true; $('donePanel').hidden=true;
     $('keypad').hidden=false; $('pinDots').hidden=false; $('faceBtn').hidden=true;
@@ -674,6 +686,8 @@
       if(ok){ $('faceBtn').hidden=false; $('lockSub').textContent='Usa Face ID o tu PIN'; }
     })();
   }
+  $('loginChoiceBtn').onclick=()=>{ showLogin(); autoFace(); };
+  $('archivarChoiceBtn').onclick=()=>{ $('fileInput').click(); };
   function doUnlock(){
     unlocked=true; $('lockScreen').hidden=true; $('archiveBody').hidden=false;
     buildPills($('orgPills'), orgSelected, renderOrganize); renderOrganize();
@@ -718,7 +732,7 @@
     $('page-archivo').hidden = name!=='archivo';
     $('page-agenda').hidden = name!=='agenda';
     document.querySelectorAll('.tab').forEach(t=> t.classList.toggle('active', t.dataset.page===name));
-    if(name==='archivo'){ if(unlocked) doUnlock(); else { showLock(); autoFace(); } }
+    if(name==='archivo'){ if(unlocked) doUnlock(); else showLock(); }
     if(name==='agenda') renderAgenda();
     window.scrollTo(0,0);
   }
