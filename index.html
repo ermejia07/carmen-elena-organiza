@@ -863,7 +863,7 @@
   }
 
   $('greetCard').onclick=()=>{ const ex=$('greetExpand'); ex.hidden=!ex.hidden; $('greetCard').classList.toggle('open', !ex.hidden); };
-  document.querySelectorAll('#agTabs .chip').forEach(b=> b.onclick=()=>{ agFilter=b.dataset.t; renderAgenda(); });
+  document.querySelectorAll('#agTabs .chip').forEach(b=> b.onclick=()=>{ agFilter=b.dataset.t; if(agFilter==='compras') lists.forEach(L=>L.open=false); renderAgenda(); });
 
   function fillCats(sel){
     const s=$('efCat'); s.innerHTML='';
