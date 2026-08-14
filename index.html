@@ -74,6 +74,7 @@
     background:var(--sand-2);border:1px solid var(--line);border-radius:100px;
     padding:9px 16px;font-size:13px;font-weight:700;color:var(--ink-soft); }
   .priv-badge .lock{color:var(--teal)}
+  .backup-row{display:flex;flex-direction:column;align-items:center;gap:4px;margin:-6px auto 18px}
 
   .sec-head{display:flex;align-items:center;gap:10px;padding:0 2px}
   .sec-head h2{font-size:17px;font-weight:700;flex:1}
@@ -297,7 +298,12 @@
         </button>
       </div>
       <div class="priv-badge"><span class="lock">🔒</span> 100% Privado</div>
+      <div class="backup-row">
+        <button class="linkbtn" id="exportBtn">⬇️ Guardar copia de seguridad</button>
+        <button class="linkbtn" id="importBtn">⬆️ Restaurar una copia</button>
+      </div>
       <input type="file" id="fileInput" accept="image/*" capture="environment" hidden>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
     </section>
 
     <!-- PAGE 2: ARCHIVO (locked) -->
@@ -940,6 +946,30 @@
   document.querySelectorAll('.agv').forEach(b=> b.onclick=()=>{ agView=b.dataset.v; renderAgenda(); });
   $('calPrev').onclick=()=>calShift(-1);
   $('calNext').onclick=()=>calShift(1);
+
+  /* ---- Backup: export / restore all data to a file ---- */
+  function collectBackup(){ return { app:'CEO', v:1, at:new Date().toISOString(), docs:docs, agenda:entries, listas:lists }; }
+  async function exportBackup(){
+    const blob=new Blob([JSON.stringify(collectBackup())],{type:'application/json'});
+    const name='CEO-copia-'+todayStr()+'.json';
+    const file=new File([blob],name,{type:'application/json'});
+    if(navigator.canShare && navigator.canShare({files:[file]})){ try{ await navigator.share({files:[file],title:'Copia de seguridad CEO'}); return; }catch(e){ if(e.name==='AbortError') return; } }
+    const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),5000);
+    showToast('✓ Copia guardada');
+  }
+  function restoreBackup(b){
+    if(!b || (!b.docs && !b.agenda && !b.listas)){ alert('Ese archivo no parece una copia de CEO.'); return; }
+    const bd=b.docs||[], ba=b.agenda||[], bl=b.listas||[];
+    if(!confirm('Restaurar copia:\n• '+bd.length+' documentos\n• '+ba.length+' cosas de agenda\n• '+bl.length+' listas\n\nSe agregan a lo que ya tienes. ¿Continuar?')) return;
+    const dids=new Set(docs.map(x=>x.id)); bd.forEach(x=>{ if(x&&!dids.has(x.id)){ const nx=normalize(x); docs.push(nx); putDoc(nx); } });
+    const eids=new Set(entries.map(x=>x.id)); ba.forEach(x=>{ if(x&&!eids.has(x.id)) entries.push(x); }); saveAgenda();
+    const lids=new Set(lists.map(x=>x.id)); bl.forEach(x=>{ if(x&&!lids.has(x.id)) lists.push(x); }); saveLists();
+    refresh(); if(!$('page-agenda').hidden) renderAgenda();
+    showToast('✓ Copia restaurada');
+  }
+  $('exportBtn').onclick=exportBackup;
+  $('importBtn').onclick=()=>$('importFile').click();
+  $('importFile').onchange=(e)=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return; const r=new FileReader(); r.onload=()=>{ try{ restoreBackup(JSON.parse(r.result)); }catch(err){ alert('No se pudo leer el archivo de copia.'); } }; r.readAsText(f); };
 
   initStore();
 
