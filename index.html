@@ -584,8 +584,8 @@
   function normalize(d){ if(!Array.isArray(d.finders)){ d.finders=[]; if(d.category) d.finders.push(d.category==='Dinero'?'Bancos':d.category); } return d; }
   // Each document is its OWN record → an atomic write. A crash can never damage
   // documents already saved; the newest photo is committed the moment you tap Guardar.
-  function putDoc(d){ return new Promise(res=>{ if(!DB) return res(false); try{ const q=DB.transaction('docs','readwrite').objectStore('docs').put(d); q.onsuccess=()=>res(true); q.onerror=()=>res(false); }catch(e){ res(false); } }); }
-  function delDocDb(id){ return new Promise(res=>{ if(!DB) return res(false); try{ const q=DB.transaction('docs','readwrite').objectStore('docs').delete(id); q.onsuccess=()=>res(true); q.onerror=()=>res(false); }catch(e){ res(false); } }); }
+  function putDoc(d){ changedSinceBackup=true; return new Promise(res=>{ if(!DB) return res(false); try{ const q=DB.transaction('docs','readwrite').objectStore('docs').put(d); q.onsuccess=()=>res(true); q.onerror=()=>res(false); }catch(e){ res(false); } }); }
+  function delDocDb(id){ changedSinceBackup=true; return new Promise(res=>{ if(!DB) return res(false); try{ const q=DB.transaction('docs','readwrite').objectStore('docs').delete(id); q.onsuccess=()=>res(true); q.onerror=()=>res(false); }catch(e){ res(false); } }); }
   function getAllDocs(){ return new Promise(res=>{ if(!DB) return res([]); try{ const q=DB.transaction('docs','readonly').objectStore('docs').getAll(); q.onsuccess=()=>res(q.result||[]); q.onerror=()=>res([]); }catch(e){ res([]); } }); }
   async function initStore(){
     DB = await idbOpen();
@@ -602,6 +602,7 @@
     entries = (await idbGet('agenda'))||[]; if(!entries.length){ try{ const ls=localStorage.getItem('ceo_agenda'); if(ls) entries=JSON.parse(ls); }catch(e){} }
     lists = (await idbGet('midia'))||[]; if(!lists.length){ try{ const ls=localStorage.getItem('ceo_midia'); if(ls) lists=JSON.parse(ls); }catch(e){} }
     lastBackupVal = Number(await idbGet('lastBackup'))||0; if(!lastBackupVal){ try{ lastBackupVal=Number(localStorage.getItem('ceo_lastBackup'))||0; }catch(e){} }
+    changedSinceBackup=false;
     maybeShowBackupReminder();
     refresh();   // show the archive list if it happens to be open (it renders on unlock otherwise)
   }
@@ -752,7 +753,7 @@
     window.scrollTo(0,0);
   }
   // Re-lock when the app is backgrounded / closed / hidden
-  document.addEventListener('visibilitychange', ()=>{ if(document.hidden){ unlocked=false; if(!$('page-archivo').hidden) showLock(); } });
+  document.addEventListener('visibilitychange', ()=>{ if(document.hidden){ unlocked=false; if(!$('page-archivo').hidden) showLock(); } else { maybeShowBackupReminder(); } });
   window.addEventListener('pagehide', ()=>{ unlocked=false; });
   document.querySelectorAll('.tab').forEach(t=> t.onclick=()=> switchPage(t.dataset.page));
 
@@ -846,8 +847,8 @@
   const ETYPES=[{k:'note',emoji:'📝',label:'Nota',plural:'Notas'},{k:'reminder',emoji:'⏰',label:'Recordatorio',plural:'Recordatorios'},{k:'calendar',emoji:'📅',label:'Cita',plural:'Citas'},{k:'finance',emoji:'💰',label:'Finanza',plural:'Finanzas'}];
   const EMAP=Object.fromEntries(ETYPES.map(t=>[t.k,t]));
   const CATS=['General','Médico / Salud','Finanzas','Lugares','Personal','Compras','Importante'];
-  function saveAgenda(){ idbSet('agenda',entries); try{ localStorage.setItem('ceo_agenda',JSON.stringify(entries)); }catch(e){} }
-  function saveLists(){ idbSet('midia',lists); try{ localStorage.setItem('ceo_midia',JSON.stringify(lists)); }catch(e){} }
+  function saveAgenda(){ changedSinceBackup=true; idbSet('agenda',entries); try{ localStorage.setItem('ceo_agenda',JSON.stringify(entries)); }catch(e){} }
+  function saveLists(){ changedSinceBackup=true; idbSet('midia',lists); try{ localStorage.setItem('ceo_midia',JSON.stringify(lists)); }catch(e){} }
   function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
   function entryDay(e){ return (e.date && e.date.length>=10) ? e.date.slice(0,10) : (e.createdAt||'').slice(0,10); }
   function fmtDay(ymd){ try{ const p=(ymd||'').split('-').map(Number); if(p.length<3||!p[0]) return ''; return new Date(p[0],p[1]-1,p[2]).toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'}); }catch(e){ return ''; } }
@@ -1012,9 +1013,9 @@
 
   /* ---- Backup: export / restore all data to a file ---- */
   function collectBackup(){ return { app:'CEO', v:1, at:new Date().toISOString(), docs:docs, agenda:entries, listas:lists }; }
-  let lastBackupVal=0;
+  let lastBackupVal=0, changedSinceBackup=false;
   function saveLastBackup(ts){ lastBackupVal=ts; idbSet('lastBackup',ts); try{ localStorage.setItem('ceo_lastBackup',String(ts)); }catch(e){} }
-  function backupDone(){ saveLastBackup(Date.now()); $('backupReminder').hidden=true; }
+  function backupDone(){ changedSinceBackup=false; saveLastBackup(Date.now()); $('backupReminder').hidden=true; }
   async function exportBackup(){
     const blob=new Blob([JSON.stringify(collectBackup())],{type:'application/json'});
     const name='CEO-copia-'+todayStr()+'.json';
@@ -1026,8 +1027,8 @@
   function maybeShowBackupReminder(){
     const hasData = (docs.length||entries.length||lists.length);
     const days = lastBackupVal ? (Date.now()-lastBackupVal)/86400000 : Infinity;
-    if(hasData && days>7){
-      $('brMsg').textContent = lastBackupVal ? 'Ha pasado más de una semana desde tu última copia.' : 'Aún no has guardado ninguna copia.';
+    if(hasData && (changedSinceBackup || days>7)){
+      $('brMsg').textContent = changedSinceBackup ? 'Hiciste cambios. Guarda una copia para no perderlos.' : (lastBackupVal ? 'Ha pasado más de una semana desde tu última copia.' : 'Aún no has guardado ninguna copia.');
       $('backupReminder').hidden=false;
     } else $('backupReminder').hidden=true;
   }
