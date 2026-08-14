@@ -339,6 +339,7 @@
         <div id="lockChoice" style="display:flex;flex-direction:column;gap:10px;width:260px">
           <button class="btn btn-primary" id="loginChoiceBtn">🔓 Login (ver documentos)</button>
           <button class="btn btn-ghost" id="archivarChoiceBtn">📷 Archivar (escanear)</button>
+          <button class="linkbtn" id="archBackupBtn" hidden style="margin-top:2px">💾 Guarda una copia (hiciste cambios)</button>
         </div>
         <div id="loginArea" hidden style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%">
         <button class="btn btn-primary" id="faceBtn" hidden style="max-width:240px;margin-bottom:4px">🙂 Entrar con Face ID</button>
@@ -687,7 +688,9 @@
     $('lockChoice').hidden=false; $('loginArea').hidden=true;
     $('lockTitle').textContent='Archivo';
     $('lockSub').textContent='¿Qué quieres hacer?';
+    $('archBackupBtn').hidden = !changedSinceBackup;
   }
+  function updateArchReminder(){ if(!$('page-archivo').hidden && !unlocked) $('archBackupBtn').hidden = !changedSinceBackup; }
   function showLogin(){   // the PIN keypad / Face ID unlock
     $('lockChoice').hidden=true; $('loginArea').hidden=false;
     entry=''; firstPin='';
@@ -704,6 +707,7 @@
   }
   $('loginChoiceBtn').onclick=()=>{ showLogin(); autoFace(); };
   $('archivarChoiceBtn').onclick=()=>{ $('fileInput').click(); };
+  $('archBackupBtn').onclick=exportBackup;
   function doUnlock(){
     unlocked=true; $('lockScreen').hidden=true; $('archiveBody').hidden=false;
     buildPills($('orgPills'), orgSelected, renderOrganize); renderOrganize();
@@ -781,7 +785,7 @@
     const title=($('titleInput').value||'').trim()||suggestName();
     const d={ id:'d'+Date.now(), title, date:Date.now(), docDate:new Date().toISOString().slice(0,10),
       sender:'', subject:'', content:'', finders:Array.from(pendingFinders), img:pendingImg };
-    docs.push(d); putDoc(d); refresh(); closeSheet('naming'); pendingImg=null; showToast('✓ Documento guardado');
+    docs.push(d); putDoc(d); refresh(); closeSheet('naming'); pendingImg=null; showToast('✓ Documento guardado'); updateArchReminder();
   };
   $('retakeBtn').onclick = ()=>{ closeSheet('naming'); pendingImg=null; $('fileInput').click(); };
 
@@ -1015,7 +1019,7 @@
   function collectBackup(){ return { app:'CEO', v:1, at:new Date().toISOString(), docs:docs, agenda:entries, listas:lists }; }
   let lastBackupVal=0, changedSinceBackup=false;
   function saveLastBackup(ts){ lastBackupVal=ts; idbSet('lastBackup',ts); try{ localStorage.setItem('ceo_lastBackup',String(ts)); }catch(e){} }
-  function backupDone(){ changedSinceBackup=false; saveLastBackup(Date.now()); $('backupReminder').hidden=true; }
+  function backupDone(){ changedSinceBackup=false; saveLastBackup(Date.now()); $('backupReminder').hidden=true; $('archBackupBtn').hidden=true; }
   async function exportBackup(){
     const blob=new Blob([JSON.stringify(collectBackup())],{type:'application/json'});
     const name='CEO-copia-'+todayStr()+'.json';
