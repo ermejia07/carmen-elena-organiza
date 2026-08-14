@@ -262,6 +262,10 @@
   .mdrow .rm{appearance:none;border:none;background:transparent;color:var(--danger);cursor:pointer;font-size:16px;padding:2px 6px}
   .md-empty{font-size:13px;color:var(--ink-soft);padding:10px 2px;text-align:center}
   #comprasView{display:flex;flex-direction:column;gap:10px}
+  #newCompraForm{display:flex;flex-direction:column;gap:8px}
+  .newcompra-row{display:flex;gap:8px}
+  .newcompra-row input[type=text]{flex:1;margin-bottom:0}
+  .newcompra-date{width:auto;min-width:42%;margin-bottom:0}
   .ml{border:1px solid var(--line);border-radius:14px;background:var(--sand-2);overflow:hidden;box-shadow:var(--shadow)}
   .ml-head{display:flex;align-items:center;gap:10px;padding:13px 14px;cursor:pointer}
   .ml-name{flex:1;font-weight:640;font-size:15.5px}
@@ -384,10 +388,15 @@
         <div class="sec-head"><h2 id="agLabel">Todo</h2><span class="count" id="agCount">0</span></div>
         <div class="list" id="agList"></div>
         <div id="comprasView" hidden>
-          <div class="mdadd"><input type="text" id="newListInput" placeholder="Nueva lista (ej: Compras del Mercado)" autocomplete="off"><button class="mdadd-btn" id="newListAdd" aria-label="Crear lista">＋</button></div>
-          <label class="fld" for="newListDate" style="margin:2px 2px 4px">Fecha de la lista (opcional)</label>
-          <input type="date" id="newListDate" class="sel">
           <div id="listsWrap"></div>
+          <button class="btn btn-ghost" id="newCompraBtn">➕ Crear nueva compra</button>
+          <div id="newCompraForm" hidden>
+            <div class="newcompra-row">
+              <input type="text" id="newListInput" placeholder="Título (ej: Mercado)" autocomplete="off">
+              <input type="date" id="newListDate" class="sel newcompra-date" title="Fecha (opcional)">
+            </div>
+            <button class="btn btn-primary" id="newListAdd">＋ Crear compra</button>
+          </div>
         </div>
         </div><!-- /listaView -->
 
@@ -938,9 +947,10 @@
     });
     if(focusListId){ const fi=wrap.querySelector('.ml[data-id="'+focusListId+'"] .ml-input'); if(fi) fi.focus(); focusListId=null; }
   }
-  function addList(){ const v=$('newListInput').value.trim(); if(!v) return; lists.push({id:'L'+Date.now(),name:v,due:$('newListDate').value||'',open:true,items:[]}); $('newListInput').value=''; $('newListDate').value=''; saveLists(); renderAgenda(); }
+  function addList(){ const v=$('newListInput').value.trim(); if(!v) return; lists.push({id:'L'+Date.now(),name:v,due:$('newListDate').value||'',open:true,items:[]}); $('newListInput').value=''; $('newListDate').value=''; $('newCompraForm').hidden=true; saveLists(); renderAgenda(); }
   $('newListAdd').onclick=addList;
   $('newListInput').addEventListener('keydown',e=>{ if(e.key==='Enter') addList(); });
+  $('newCompraBtn').onclick=()=>{ const f=$('newCompraForm'); f.hidden=!f.hidden; if(!f.hidden) setTimeout(()=>$('newListInput').focus(),50); };
   $('entryForm').addEventListener('click', e=>{ if(e.target.id==='entryForm') closeSheet('entryForm'); });
 
   /* ---- Calendar (graph) view ---- */
