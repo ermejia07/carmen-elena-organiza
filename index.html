@@ -497,21 +497,26 @@
       <button type="button" class="chip" data-k="reminder">⏰ Recordatorio</button>
       <button type="button" class="chip" data-k="calendar">📅 Cita</button>
       <button type="button" class="chip" data-k="finance">💰 Finanza</button>
+      <button type="button" class="chip" data-k="compras">🛒 Compras</button>
     </div></div>
-    <label class="fld" for="efTitle">Título</label>
+    <label class="fld" for="efTitle" id="efTitleLbl">Título</label>
     <input type="text" id="efTitle" placeholder="¿Qué necesitas recordar?" autocomplete="off">
     <div class="details">
-      <label class="fld" for="efDetails">Detalles</label>
-      <textarea id="efDetails" placeholder="Cualquier detalle…"></textarea>
-      <label class="fld" for="efDate">Fecha</label>
+      <div id="efEntryTop">
+        <label class="fld" for="efDetails">Detalles</label>
+        <textarea id="efDetails" placeholder="Cualquier detalle…"></textarea>
+      </div>
+      <label class="fld" for="efDate" id="efDateLbl">Fecha</label>
       <input type="date" id="efDate">
-      <label class="fld" for="efTime">Hora</label>
-      <input type="time" id="efTime">
-      <label class="fld" for="efPrio">Prioridad</label>
-      <select id="efPrio" class="sel"><option value="">—</option><option>Baja</option><option>Media</option><option>Alta</option><option>Urgente</option></select>
-      <label class="fld" for="efCat">Categoría</label>
-      <select id="efCat" class="sel"></select>
-      <input type="text" id="efCatCustom" placeholder="Nombre de la categoría" hidden style="margin-top:6px">
+      <div id="efEntryBottom">
+        <label class="fld" for="efTime">Hora</label>
+        <input type="time" id="efTime">
+        <label class="fld" for="efPrio">Prioridad</label>
+        <select id="efPrio" class="sel"><option value="">—</option><option>Baja</option><option>Media</option><option>Alta</option><option>Urgente</option></select>
+        <label class="fld" for="efCat">Categoría</label>
+        <select id="efCat" class="sel"></select>
+        <input type="text" id="efCatCustom" placeholder="Nombre de la categoría" hidden style="margin-top:6px">
+      </div>
     </div>
     <div class="btn-row">
       <button class="btn btn-ghost" id="efCancel">Cancelar</button>
@@ -867,7 +872,15 @@
     else { s.value=sel||'General'; $('efCatCustom').hidden=true; $('efCatCustom').value=''; }
   }
   $('efCat').onchange=()=>{ $('efCatCustom').hidden = $('efCat').value!=='__custom__'; };
-  document.querySelectorAll('#efType .chip').forEach(b=> b.onclick=()=>{ entryType=b.dataset.k; document.querySelectorAll('#efType .chip').forEach(x=>x.classList.remove('active')); b.classList.add('active'); $('efFormTitle').textContent=(editEntryId?'Editar ':'Nueva ')+EMAP[entryType].label.toLowerCase(); });
+  function updateFormForType(){
+    const isC = entryType==='compras';
+    $('efEntryTop').hidden = isC; $('efEntryBottom').hidden = isC;
+    $('efTitleLbl').textContent = isC ? 'Nombre de la lista' : 'Título';
+    $('efTitle').placeholder = isC ? 'Ej: Compras del Mercado' : '¿Qué necesitas recordar?';
+    $('efDateLbl').textContent = isC ? 'Fecha (opcional)' : 'Fecha';
+    $('efFormTitle').textContent = isC ? (editEntryId?'Editar lista':'Nueva lista') : ((editEntryId?'Editar ':'Nueva ')+(EMAP[entryType]?EMAP[entryType].label.toLowerCase():'nota'));
+  }
+  document.querySelectorAll('#efType .chip').forEach(b=> b.onclick=()=>{ entryType=b.dataset.k; document.querySelectorAll('#efType .chip').forEach(x=>x.classList.remove('active')); b.classList.add('active'); updateFormForType(); });
   function openEntry(id){
     editEntryId=id||null; const e = id? entries.find(x=>x.id===id):null;
     entryType = e? e.type:'note';
@@ -875,13 +888,18 @@
     $('efTitle').value=e?e.title:''; $('efDetails').value=e?(e.details||''):'';
     $('efDate').value=e&&e.date?e.date:''; $('efTime').value=e&&e.time?e.time:''; $('efPrio').value=e&&e.priority?e.priority:'';
     fillCats(e?e.category:'General');
-    $('efFormTitle').textContent=(e?'Editar ':'Nueva ')+EMAP[entryType].label.toLowerCase();
+    updateFormForType();
     $('efSave').textContent=e?'Actualizar':'Guardar';
     openSheet('entryForm'); setTimeout(()=>$('efTitle').focus(),300);
   }
   $('addEntryBtn').onclick=()=>openEntry(null);
   $('efCancel').onclick=()=>closeSheet('entryForm');
   $('efSave').onclick=()=>{
+    if(entryType==='compras'){
+      const name=$('efTitle').value.trim(); if(!name){ $('efTitle').focus(); return; }
+      lists.push({id:'L'+Date.now(), name, due:$('efDate').value||'', open:true, items:[]});
+      saveLists(); closeSheet('entryForm'); agView='lista'; agFilter='compras'; renderAgenda(); showToast('✓ Lista creada'); return;
+    }
     const title=$('efTitle').value.trim(); if(!title){ $('efTitle').focus(); return; }
     const cat = $('efCat').value==='__custom__' ? ($('efCatCustom').value.trim()||'') : $('efCat').value;
     const data={ type:entryType, title, details:$('efDetails').value.trim(), category:cat, date:$('efDate').value, time:$('efTime').value, priority:$('efPrio').value };
