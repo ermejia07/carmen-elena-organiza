@@ -3,15 +3,21 @@ const CACHE = 'carelena-v3';
 const ASSETS = ['./', './index.html', './manifest.json', './icon-180.png', './icon-512.png', './watermark.jpg'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+  // Pre-cache the app shell, but wait (don't skipWaiting) so the page can
+  // offer a gentle "new version" banner instead of updating out from under you.
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
 });
 
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
       .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
-      .then(() => self.clients.claim())
   );
+});
+
+// The page tells us to activate the waiting worker when the user taps "Actualizar".
+self.addEventListener('message', e => {
+  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('fetch', e => {
@@ -20,7 +26,7 @@ self.addEventListener('fetch', e => {
   const isDoc = req.mode === 'navigate' || req.destination === 'document'
              || req.url.endsWith('/') || req.url.endsWith('index.html');
   if (isDoc) {
-    // Network-first for the app itself, so updates always arrive when online.
+    // Network-first for the app itself, so the latest version always arrives when online.
     e.respondWith(
       fetch(req).then(resp => {
         const copy = resp.clone();

@@ -87,6 +87,12 @@
   .br-text small{font-size:12px;color:var(--ink-soft)}
   .br-go{appearance:none;border:none;background:var(--teal);color:#fff;border-radius:100px;padding:8px 14px;font-weight:650;font-size:13px;cursor:pointer;font-family:inherit;flex:none}
   .br-x{appearance:none;border:none;background:transparent;color:var(--ink-soft);cursor:pointer;font-size:14px;padding:4px;flex:none}
+  .update-banner{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top));transform:translateX(-50%);z-index:70;
+    display:flex;align-items:center;gap:9px;background:var(--teal);color:#fff;border-radius:100px;
+    padding:8px 9px 8px 15px;box-shadow:var(--shadow-lift);font-size:14px;font-weight:600;max-width:calc(100% - 22px)}
+  .update-banner[hidden]{display:none}
+  .ub-go{appearance:none;border:none;background:#fff;color:var(--teal);border-radius:100px;padding:7px 14px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;flex:none}
+  .ub-x{appearance:none;border:none;background:transparent;color:#fff;opacity:.85;cursor:pointer;font-size:15px;padding:4px;flex:none}
 
   .sec-head{display:flex;align-items:center;gap:10px;padding:0 2px}
   .sec-head h2{font-size:17px;font-weight:700;flex:1}
@@ -557,6 +563,12 @@
       <button class="btn btn-primary" id="efSave">Guardar</button>
     </div>
   </div>
+</div>
+
+<div class="update-banner" id="updateBanner" hidden>
+  <span>✨ Hay una versión nueva</span>
+  <button class="ub-go" id="ubGo">Actualizar</button>
+  <button class="ub-x" id="ubDismiss" aria-label="Ahora no">✕</button>
 </div>
 
 <div class="toast" id="toast">✓ Documento guardado</div>
@@ -1059,9 +1071,25 @@
 
   initStore();
 
-  // Always load fresh while we're iterating: remove any old service worker + offline caches.
-  if('serviceWorker' in navigator){ navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())).catch(()=>{}); }
-  if(window.caches && caches.keys){ caches.keys().then(ks=>ks.forEach(k=>caches.delete(k))).catch(()=>{}); }
+  // Offline support + a gentle "new version" banner so the app is never stuck on an old version.
+  function showUpdateBanner(worker){
+    const b=$('updateBanner'); if(!b||!worker) return; b.hidden=false;
+    $('ubGo').onclick=()=>{ b.hidden=true; worker.postMessage({type:'SKIP_WAITING'}); };
+    $('ubDismiss').onclick=()=>{ b.hidden=true; };
+  }
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('./sw.js').then(reg=>{
+      if(reg.waiting && navigator.serviceWorker.controller) showUpdateBanner(reg.waiting);
+      reg.addEventListener('updatefound', ()=>{
+        const nw=reg.installing; if(!nw) return;
+        nw.addEventListener('statechange', ()=>{
+          if(nw.state==='installed' && navigator.serviceWorker.controller) showUpdateBanner(nw);
+        });
+      });
+    }).catch(()=>{});
+    let reloading=false;
+    navigator.serviceWorker.addEventListener('controllerchange', ()=>{ if(reloading) return; reloading=true; location.reload(); });
+  }
   // Ask the browser to keep this app's data permanently (don't evict).
   if(navigator.storage && navigator.storage.persist){ navigator.storage.persist().catch(()=>{}); }
 </script>
