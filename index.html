@@ -60,9 +60,14 @@
 
   /* ---- Escanear: blank capture screen ---- */
   #page-scan{padding:0}
-  .scan-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
-    padding:30px 18px;min-height:52vh;
-    /* watermark background goes here later */ }
+  .scan-stage{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+    padding:30px 18px;min-height:52vh; }
+  /* full-screen watermark, only on the Escanear (home) page */
+  #page-scan::before{ content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
+    background:url('./watermark.jpg') center center / cover no-repeat;
+    opacity:.07; -webkit-mask-image:radial-gradient(circle at center, #000 60%, transparent 100%);
+    mask-image:radial-gradient(circle at center, #000 60%, transparent 100%); }
+  #page-scan > *{position:relative;z-index:1}
   .scan-fab{ appearance:none;border:none;cursor:pointer; width:118px;height:118px;border-radius:50%;
     background:var(--coral);color:#fff; display:grid;place-items:center;
     box-shadow:var(--shadow-lift); transition:transform .12s ease, background .15s ease; }
