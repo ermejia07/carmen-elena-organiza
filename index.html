@@ -42,8 +42,8 @@
     padding-bottom:calc(104px + env(safe-area-inset-bottom))}
 
   header{ padding:9px 18px; padding-top:calc(8px + env(safe-area-inset-top));
-    border-bottom:1px solid var(--line);
-    background:linear-gradient(180deg,var(--sand-2),var(--sand));
+    border-bottom:1px solid rgba(14,124,107,.15);
+    background:#e6f0ea; background:color-mix(in srgb, var(--teal) 14%, var(--sand-2));
     display:flex;align-items:center;justify-content:center;gap:10px; }
   .mark{ width:34px;height:34px;margin:0; filter:drop-shadow(0 3px 8px rgba(14,124,107,.25)); }
   .mark svg{display:block;width:100%;height:100%}
@@ -62,12 +62,12 @@
   #page-scan{padding:0}
   .scan-stage{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
     padding:30px 18px;min-height:52vh; }
-  /* full-screen watermark, only on the Escanear (home) page */
-  #page-scan::before{ content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
-    background:url('./watermark.jpg') center center / cover no-repeat;
-    opacity:.07; -webkit-mask-image:radial-gradient(circle at center, #000 60%, transparent 100%);
-    mask-image:radial-gradient(circle at center, #000 60%, transparent 100%); }
-  #page-scan > *{position:relative;z-index:1}
+  /* soft full-screen photo watermark behind the Agenda (home) page */
+  #page-agenda::before{ content:""; position:fixed; left:0; right:0; z-index:0; pointer-events:none;
+    top:0; bottom:calc(var(--tabbar-h,64px) + var(--pills-h,56px));
+    background:url('./watermark.jpg?v=2') center center / cover no-repeat;
+    opacity:.2; }
+  #page-agenda > *{position:relative;z-index:1}
   .scan-fab{ appearance:none;border:none;cursor:pointer; width:118px;height:118px;border-radius:50%;
     background:var(--coral);color:#fff; display:grid;place-items:center;
     box-shadow:var(--shadow-lift); transition:transform .12s ease, background .15s ease; }
@@ -154,14 +154,14 @@
   .archive-wrap{padding:20px 18px 8px;display:flex;flex-direction:column;gap:16px}
 
   .tabbar{ position:fixed;left:0;right:0;bottom:0;z-index:30; display:flex;justify-content:center;gap:6px;
-    background:var(--sand-2);border-top:1px solid var(--line);
+    background:var(--teal-deep);border-top:1px solid rgba(255,255,255,.10);
     padding:8px 10px calc(8px + env(safe-area-inset-bottom)); }
   .tab{ flex:1;max-width:220px;appearance:none;border:none;cursor:pointer;background:transparent;
     display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;border-radius:14px;
-    color:var(--ink-soft);font-family:inherit;font-size:11.5px;font-weight:650; }
+    color:rgba(255,255,255,.55);font-family:inherit;font-size:11.5px;font-weight:650;transition:color .15s; }
   .tab svg{width:24px;height:24px}
-  .tab.active{color:var(--teal)}
-  .tabdot{width:5px;height:5px;border-radius:50%;background:var(--teal);opacity:0;margin-top:1px}
+  .tab.active{color:#fff}
+  .tabdot{width:5px;height:5px;border-radius:50%;background:#fff;opacity:0;margin-top:1px}
   .tab.active .tabdot{opacity:1}
   .tab-cam{color:var(--ink-soft)}
   .tab-cam.active{color:var(--teal)}
@@ -207,7 +207,7 @@
   .del{background:transparent;border:none;color:var(--danger);font-size:15px;font-weight:600;cursor:pointer;padding:12px;margin-top:6px}
 
   /* ---- Agenda ---- */
-  .agenda-wrap{padding:18px 18px 8px;display:flex;flex-direction:column;gap:14px}
+  .agenda-wrap{padding:18px 18px calc(var(--tabbar-h,64px) + var(--pills-h,56px) + 14px);display:flex;flex-direction:column;gap:14px}
   .greet{background:var(--teal);color:#fff;border-radius:18px;padding:16px 18px;box-shadow:var(--shadow);cursor:pointer}
   .greet-eyebrow{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;opacity:.8;margin-bottom:4px}
   .greet-top{display:flex;align-items:center;gap:9px;font-size:18px}
@@ -224,11 +224,18 @@
   .mini-row .dot2{background:var(--coral)}
   .more{font-size:12.5px;opacity:.85}
   #agTabs .chip b{margin-left:3px;font-variant-numeric:tabular-nums}
-  .ag-actions{display:flex;gap:10px}
-  .ag-actions .btn{padding:13px}
+  /* pills pinned as a fixed bar directly above the two bottom tabs — always in the same spot */
+  #agTabsRow{ position:fixed; left:0; right:0; bottom:var(--tabbar-h,64px); z-index:29;
+    background:#e6f0ea; background:color-mix(in srgb, var(--teal) 14%, var(--sand-2));
+    border-top:1px solid rgba(14,124,107,.15); padding:8px 18px; }
+  /* small "+" button, ~1/4 the width of the two toggle buttons, sitting between them */
+  .ag-add{flex:0.25;appearance:none;border:none;cursor:pointer;padding:9px 0;border-radius:9px;
+    background:var(--coral);color:#fff;font-family:inherit;font-size:16px;font-weight:700;
+    display:grid;place-items:center;transition:background .15s,transform .1s}
+  .ag-add:active{background:var(--coral-deep);transform:scale(.96)}
   #listaView{display:flex;flex-direction:column;gap:14px}
   .ag-toggle{display:flex;gap:6px;background:var(--sand-2);border:1px solid var(--line);border-radius:12px;padding:4px}
-  .agv{flex:1;appearance:none;border:none;background:transparent;cursor:pointer;padding:9px;border-radius:9px;font-family:inherit;font-size:14px;font-weight:640;color:var(--ink-soft)}
+  .agv{flex:1;appearance:none;border:none;background:rgba(14,124,107,.10);background:color-mix(in srgb, var(--teal) 12%, transparent);cursor:pointer;padding:9px;border-radius:9px;font-family:inherit;font-size:14px;font-weight:640;color:var(--teal)}
   .agv.active{background:var(--teal);color:#fff}
   .cal-head{display:flex;align-items:center;justify-content:space-between;padding:2px 2px;margin-top:2px}
   .cal-head b{font-family:Georgia,serif;font-size:18px}
@@ -280,10 +287,6 @@
   .mdrow .rm{appearance:none;border:none;background:transparent;color:var(--danger);cursor:pointer;font-size:16px;padding:2px 6px}
   .md-empty{font-size:13px;color:var(--ink-soft);padding:10px 2px;text-align:center}
   #comprasView{display:flex;flex-direction:column;gap:10px}
-  #newCompraForm{display:flex;flex-direction:column;gap:8px}
-  .newcompra-row{display:flex;gap:8px}
-  .newcompra-row input[type=text]{flex:1;margin-bottom:0}
-  .newcompra-date{width:auto;min-width:42%;margin-bottom:0}
   .ml{border:1px solid var(--line);border-radius:14px;background:var(--sand-2);overflow:hidden;box-shadow:var(--shadow)}
   .ml-head{display:flex;align-items:center;gap:10px;padding:13px 14px;cursor:pointer}
   .ml-name{flex:1;font-weight:640;font-size:15.5px}
@@ -317,29 +320,9 @@
 
   <main>
     <!-- PAGE 1: ESCANEAR (blank) -->
-    <section class="page" id="page-scan">
-      <div class="backup-reminder" id="backupReminder" hidden>
-        <span class="br-ico">💾</span>
-        <div class="br-text"><b>Guarda una copia de seguridad</b><small id="brMsg"></small></div>
-        <button class="br-go" id="brGo">Guardar</button>
-        <button class="br-x" id="brDismiss" aria-label="Ahora no">✕</button>
-      </div>
-      <div class="scan-stage">
-        <button class="scan-fab" id="scanBtn" aria-label="Escanear documento">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-            <circle cx="12" cy="13" r="4"></circle>
-          </svg>
-        </button>
-      </div>
-      <div class="priv-badge"><span class="lock">🔒</span> 100% Privado</div>
-      <div class="backup-row">
-        <button class="linkbtn" id="exportBtn">⬇️ Guardar copia de seguridad</button>
-        <button class="linkbtn" id="importBtn">⬆️ Restaurar una copia</button>
-      </div>
-      <input type="file" id="fileInput" accept="image/*" capture="environment" hidden>
-      <input type="file" id="importFile" accept="application/json,.json" hidden>
-    </section>
+    <!-- Hidden inputs used by the scan + restore flows (shared across pages) -->
+    <input type="file" id="fileInput" accept="image/*" capture="environment" hidden>
+    <input type="file" id="importFile" accept="application/json,.json" hidden>
 
     <!-- PAGE 2: ARCHIVO (locked) -->
     <section class="page" id="page-archivo" hidden>
@@ -388,16 +371,28 @@
           <span class="count" id="countOrg">0</span>
           <button class="lockbtn" id="relockBtn" title="Bloquear" aria-label="Bloquear">🔒</button>
         </div>
+        <button class="btn btn-primary" id="scanInArchiveBtn" style="width:100%;margin-bottom:12px">📷 Escanear un documento</button>
         <input type="search" id="search" class="search" placeholder="Buscar por nombre, remitente o tema…">
         <p class="finder-hint">Toca los <b>finders</b> para encontrar tus documentos (puedes elegir varios)</p>
         <div class="pillrow" id="orgPills"></div>
         <div class="list" id="listOrg"></div>
+        <div class="priv-badge" style="margin-top:22px"><span class="lock">🔒</span> 100% Privado</div>
+        <div class="backup-row">
+          <button class="linkbtn" id="exportBtn">⬇️ Guardar copia de seguridad</button>
+          <button class="linkbtn" id="importBtn">⬆️ Restaurar una copia</button>
+        </div>
       </div>
     </section>
 
     <!-- PAGE 3: AGENDA -->
     <section class="page" id="page-agenda" hidden>
       <div class="agenda-wrap">
+        <div class="backup-reminder" id="backupReminder" hidden>
+          <span class="br-ico">💾</span>
+          <div class="br-text"><b>Guarda una copia de seguridad</b><small id="brMsg"></small></div>
+          <button class="br-go" id="brGo">Guardar</button>
+          <button class="br-x" id="brDismiss" aria-label="Ahora no">✕</button>
+        </div>
         <div class="greet" id="greetCard">
           <div class="greet-eyebrow">Mi Día</div>
           <div class="greet-top"><span id="greetIcon">🌤️</span><b id="greetText">Buen día</b><span class="gchev">›</span></div>
@@ -412,22 +407,14 @@
 
         <div class="ag-toggle">
           <button class="agv active" data-v="lista">📋 En Listado</button>
+          <button class="ag-add" id="addEntryBtn" aria-label="Agregar" title="Agregar">➕</button>
           <button class="agv" data-v="calendario">📅 En Calendario</button>
         </div>
 
         <div id="listaView">
-        <div class="sec-head"><h2 id="agLabel">Todo</h2><span class="count" id="agCount">0</span></div>
         <div class="list" id="agList"></div>
         <div id="comprasView" hidden>
           <div id="listsWrap"></div>
-          <button class="btn btn-ghost" id="newCompraBtn">➕ Crear nueva compra</button>
-          <div id="newCompraForm" hidden>
-            <div class="newcompra-row">
-              <input type="text" id="newListInput" placeholder="Título (ej: Mercado)" autocomplete="off">
-              <input type="date" id="newListDate" class="sel newcompra-date" title="Fecha (opcional)">
-            </div>
-            <button class="btn btn-primary" id="newListAdd">＋ Crear compra</button>
-          </div>
         </div>
         </div><!-- /listaView -->
 
@@ -440,41 +427,30 @@
 
         <div class="pillrow" id="agTabsRow">
           <div class="pill-track" id="agTabs">
-            <button class="chip active" data-t="all">Todo <b>0</b></button>
+            <button class="chip active" data-t="compras">🛒 Compras <b>0</b></button>
             <button class="chip" data-t="note">📝 Notas <b>0</b></button>
             <button class="chip" data-t="reminder">⏰ Recordatorios <b>0</b></button>
             <button class="chip" data-t="calendar">📅 Citas <b>0</b></button>
             <button class="chip" data-t="finance">💰 Finanzas <b>0</b></button>
-            <button class="chip" data-t="compras">🛒 Compras <b>0</b></button>
           </div>
-        </div>
-        <div class="ag-actions" id="agActions">
-          <button class="btn btn-primary" id="addEntryBtn">➕ Agregar</button>
         </div>
       </div>
     </section>
   </main>
 
   <nav class="tabbar">
+    <button class="tab" data-page="agenda">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path>
+      </svg>
+      <span>Agenda</span><span class="tabdot"></span>
+    </button>
     <button class="tab" data-page="archivo">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M21 8v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8"></path>
         <rect x="1" y="3" width="22" height="5" rx="1"></rect><path d="M10 12h4"></path>
       </svg>
       <span>Archivo</span><span class="tabdot"></span>
-    </button>
-    <button class="tab tab-cam active" data-page="scan">
-      <span class="cam-fab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-        <circle cx="12" cy="13" r="4"></circle>
-      </svg></span>
-      <span>Colectar</span><span class="tabdot"></span>
-    </button>
-    <button class="tab" data-page="agenda">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path>
-      </svg>
-      <span>Agenda</span><span class="tabdot"></span>
     </button>
   </nav>
 </div>
@@ -623,6 +599,7 @@
     changedSinceBackup=false;
     maybeShowBackupReminder();
     refresh();   // show the archive list if it happens to be open (it renders on unlock otherwise)
+    switchPage('agenda');   // land on the Agenda (Compras first) once data is loaded
   }
   function fmtDate(ts){ try{ return new Date(ts).toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'}); }catch(e){ return ''; } }
 
@@ -765,7 +742,6 @@
   /* ---- Pages ---- */
   function switchPage(name){
     if(name!=='archivo') unlocked=false;      // leaving Archivo re-locks it
-    $('page-scan').hidden = name!=='scan';
     $('page-archivo').hidden = name!=='archivo';
     $('page-agenda').hidden = name!=='agenda';
     document.querySelectorAll('.tab').forEach(t=> t.classList.toggle('active', t.dataset.page===name));
@@ -777,6 +753,15 @@
   document.addEventListener('visibilitychange', ()=>{ if(document.hidden){ unlocked=false; if(!$('page-archivo').hidden) showLock(); } else { maybeShowBackupReminder(); } });
   window.addEventListener('pagehide', ()=>{ unlocked=false; });
   document.querySelectorAll('.tab').forEach(t=> t.onclick=()=> switchPage(t.dataset.page));
+
+  // Measure the bottom tabbar (and the pinned pills) so the pills always sit exactly above the tabs.
+  function layoutBottomBars(){
+    const tb=document.querySelector('.tabbar'); if(tb) document.documentElement.style.setProperty('--tabbar-h', tb.offsetHeight+'px');
+    const pr=$('agTabsRow'); if(pr && pr.offsetHeight) document.documentElement.style.setProperty('--pills-h', pr.offsetHeight+'px');
+    const lv=$('listaView'); if(lv){ const t=Math.round(lv.getBoundingClientRect().top); if(t>0) document.documentElement.style.setProperty('--main-top', t+'px'); }
+  }
+  window.addEventListener('resize', layoutBottomBars);
+  window.addEventListener('orientationchange', ()=> setTimeout(layoutBottomBars,200));
 
   /* ---- Capture ---- */
   function processImage(file){
@@ -790,7 +775,7 @@
       reader.readAsDataURL(file); });
   }
   function suggestName(){ const d=new Date(); const m=d.toLocaleDateString('es-ES',{month:'long'}); return 'Documento — '+m.charAt(0).toUpperCase()+m.slice(1); }
-  $('scanBtn').onclick = ()=> $('fileInput').click();
+  $('scanInArchiveBtn').onclick = ()=> $('fileInput').click();
   $('fileInput').onchange = async e=>{
     const file=e.target.files[0]; e.target.value=''; if(!file) return;
     pendingImg=await processImage(file); pendingFinders=new Set();
@@ -860,7 +845,7 @@
 
   /* ================= AGENDA (imported from IN2) ================= */
   let entries=[], lists=[], focusListId=null;
-  let agFilter='all', editEntryId=null, entryType='note';
+  let agFilter='compras', editEntryId=null, entryType='note';
   let agView='lista', calY=new Date().getFullYear(), calM=new Date().getMonth();
   const TYPE_ORDER=['finance','note','reminder','calendar','compras'];
   const TYPE_COLOR={finance:'#d9463c',note:'#2f6fb0',reminder:'#e8843c',calendar:'#7a5bb0',compras:'#2f8f5b'};
@@ -876,6 +861,7 @@
   function greetText(){ const h=new Date().getHours(); return (h<12?'Buenos días':(h<19?'Buenas tardes':'Buenas noches'))+', Carmen'; }
 
   function renderAgenda(){
+    layoutBottomBars();
     $('greetIcon').textContent = new Date().getHours()<19?'🌤️':'🌙';
     $('greetText').textContent = greetText();
     const notDone=entries.filter(e=>!e.done), done=entries.filter(e=>e.done), t=todayStr();
@@ -892,17 +878,14 @@
     document.querySelectorAll('#agTabs .chip').forEach(b=>{ const tt=b.dataset.t; let n; if(tt==='all') n=entries.length; else if(tt==='compras') n=lists.length; else n=entries.filter(e=>e.type===tt).length; b.querySelector('b').textContent=n; b.classList.toggle('active', tt===agFilter); });
     const calMode = agView==='calendario';
     $('listaView').hidden = calMode; $('calView').hidden = !calMode; $('agTabsRow').hidden = calMode;
-    if(calMode){ $('agActions').hidden=false; renderCalendar(); return; }
+    if(calMode){ renderCalendar(); return; }
     const isCompras = agFilter==='compras';
-    $('agActions').hidden = isCompras;
     $('agList').hidden = isCompras;
     $('comprasView').hidden = !isCompras;
-    if(isCompras){ $('agLabel').textContent='Compras'; $('agCount').textContent=lists.length+(lists.length===1?' lista':' listas'); renderCompras(); return; }
-    $('agLabel').textContent = agFilter==='all'?'Todo':EMAP[agFilter].plural;
+    if(isCompras){ renderCompras(); return; }
     const shown = entries.filter(e=> agFilter==='all'||e.type===agFilter);
-    $('agCount').textContent = shown.length+(shown.length===1?' cosa':' cosas');
     const list=$('agList'); list.innerHTML='';
-    if(!shown.length){ list.innerHTML='<div class="empty"><div class="big">📭</div><p>Nada aún. Toca «Agregar» para empezar.</p></div>'; return; }
+    if(!shown.length){ list.innerHTML=''; return; }
     shown.forEach(e=>{
       const ty=EMAP[e.type]||EMAP.note;
       const card=document.createElement('div'); card.className='entry'+(e.done?' done':'');
@@ -922,7 +905,7 @@
     });
   }
 
-  $('greetCard').onclick=()=>{ const ex=$('greetExpand'); ex.hidden=!ex.hidden; $('greetCard').classList.toggle('open', !ex.hidden); };
+  $('greetCard').onclick=()=>{ const ex=$('greetExpand'); ex.hidden=!ex.hidden; $('greetCard').classList.toggle('open', !ex.hidden); layoutBottomBars(); };
   document.querySelectorAll('#agTabs .chip').forEach(b=> b.onclick=()=>{ agFilter=b.dataset.t; if(agFilter==='compras') lists.forEach(L=>L.open=false); renderAgenda(); });
 
   function fillCats(sel){
@@ -943,7 +926,8 @@
   document.querySelectorAll('#efType .chip').forEach(b=> b.onclick=()=>{ entryType=b.dataset.k; document.querySelectorAll('#efType .chip').forEach(x=>x.classList.remove('active')); b.classList.add('active'); updateFormForType(); });
   function openEntry(id){
     editEntryId=id||null; const e = id? entries.find(x=>x.id===id):null;
-    entryType = e? e.type:'note';
+    // New entries default to whichever pill is currently open (Notas, Compras, etc.); still switchable in the card.
+    entryType = e ? e.type : (['note','reminder','calendar','finance','compras'].includes(agFilter) ? agFilter : 'note');
     document.querySelectorAll('#efType .chip').forEach(b=>b.classList.toggle('active', b.dataset.k===entryType));
     $('efTitle').value=e?e.title:''; $('efDetails').value=e?(e.details||''):'';
     $('efDate').value=e&&e.date?e.date:''; $('efTime').value=e&&e.time?e.time:''; $('efPrio').value=e&&e.priority?e.priority:'';
@@ -970,7 +954,7 @@
 
   function renderCompras(){
     const wrap=$('listsWrap'); wrap.innerHTML='';
-    if(!lists.length){ wrap.innerHTML='<div class="md-empty">Aún no tienes listas. Crea una arriba (ej: «Bancos» o «Compras del Mercado»).</div>'; return; }
+    if(!lists.length){ wrap.innerHTML=''; return; }
     lists.forEach(L=>{
       if(!Array.isArray(L.items)) L.items=[];
       const el=document.createElement('div'); el.className='ml'+(L.open?' open':''); el.dataset.id=L.id;
@@ -998,10 +982,6 @@
     });
     if(focusListId){ const fi=wrap.querySelector('.ml[data-id="'+focusListId+'"] .ml-input'); if(fi) fi.focus(); focusListId=null; }
   }
-  function addList(){ const v=$('newListInput').value.trim(); if(!v) return; lists.push({id:'L'+Date.now(),name:v,due:$('newListDate').value||'',open:true,items:[]}); $('newListInput').value=''; $('newListDate').value=''; $('newCompraForm').hidden=true; saveLists(); renderAgenda(); }
-  $('newListAdd').onclick=addList;
-  $('newListInput').addEventListener('keydown',e=>{ if(e.key==='Enter') addList(); });
-  $('newCompraBtn').onclick=()=>{ const f=$('newCompraForm'); f.hidden=!f.hidden; if(!f.hidden) setTimeout(()=>$('newListInput').focus(),50); };
   $('entryForm').addEventListener('click', e=>{ if(e.target.id==='entryForm') closeSheet('entryForm'); });
 
   /* ---- Calendar (graph) view ---- */

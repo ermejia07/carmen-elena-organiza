@@ -1,6 +1,6 @@
 /* Carmen Elena Organiza — offline service worker */
-const CACHE = 'carelena-v3';
-const ASSETS = ['./', './index.html', './manifest.json', './icon-180.png', './icon-512.png', './watermark.jpg'];
+const CACHE = 'carelena-v4';
+const ASSETS = ['./', './index.html', './manifest.json', './icon-180.png', './icon-512.png', './watermark.jpg?v=2'];
 
 self.addEventListener('install', e => {
   // Pre-cache the app shell, but wait (don't skipWaiting) so the page can
