@@ -74,6 +74,12 @@
     background:url('./watermark.jpg?v=2') center 84% / cover no-repeat;
     opacity:.2; }
   #page-archivo > *{position:relative;z-index:1}
+  /* On tall/narrow phone screens the photo shrinks to exactly fit the height, which
+     leaves no vertical slack — so the position above has no effect and Carmen Elena
+     sits too low. Zoom in a little there so she can be pushed up. */
+  @media (max-aspect-ratio: 706/1000){
+    #page-archivo::before{ background-size:auto 130%; }
+  }
   .scan-fab{ appearance:none;border:none;cursor:pointer; width:118px;height:118px;border-radius:50%;
     background:var(--coral);color:#fff; display:grid;place-items:center;
     box-shadow:var(--shadow-lift); transition:transform .12s ease, background .15s ease; }
