@@ -71,15 +71,9 @@
   /* same soft photo backdrop on the Archivo page (down to the tab bar) */
   #page-archivo::before{ content:""; position:fixed; left:0; right:0; z-index:0; pointer-events:none;
     top:0; bottom:var(--tabbar-h,64px);
-    background:url('./watermark.jpg?v=2') center 84% / cover no-repeat;
+    background:url('./watermark-archivo.jpg?v=1') center center / cover no-repeat;
     opacity:.2; }
   #page-archivo > *{position:relative;z-index:1}
-  /* On tall/narrow phone screens the photo shrinks to exactly fit the height, which
-     leaves no vertical slack — so the position above has no effect and Carmen Elena
-     sits too low. Zoom in a little there so she can be pushed up. */
-  @media (max-aspect-ratio: 706/1000){
-    #page-archivo::before{ background-size:auto 130%; }
-  }
   .scan-fab{ appearance:none;border:none;cursor:pointer; width:118px;height:118px;border-radius:50%;
     background:var(--coral);color:#fff; display:grid;place-items:center;
     box-shadow:var(--shadow-lift); transition:transform .12s ease, background .15s ease; }
@@ -145,10 +139,12 @@
 
   /* ---- Lock screen ---- */
   #page-archivo{padding:0}
-  .lockscreen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
+  .lockscreen{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
     text-align:center;padding:40px 26px;min-height:52vh}
-  .lock-emblem{font-size:46px}
-  .lockscreen h2{font-family:Georgia,serif;font-size:22px}
+  /* the lock and its title sit small and quiet in the bottom-left corner */
+  .lock-emblem{position:absolute;left:16px;bottom:12px;font-size:15px;opacity:.7;z-index:2}
+  .lockscreen h2{position:absolute;left:40px;bottom:12px;margin:0;
+    font-family:Georgia,serif;font-size:12px;font-weight:600;color:var(--ink-soft);opacity:.8;z-index:2}
   .lock-sub{color:var(--ink-soft);font-size:14px;max-width:26ch;margin-bottom:8px}
   .pin-dots{display:flex;gap:16px;margin:6px 0 2px}
   .pin-dots i{width:15px;height:15px;border-radius:50%;border:2px solid var(--teal);background:transparent;transition:background .1s}
@@ -347,7 +343,7 @@
       <div class="lockscreen" id="lockScreen">
         <div class="lock-emblem" id="lockEmblem">🔒</div>
         <h2 id="lockTitle">Archivo protegido</h2>
-        <p class="lock-sub" id="lockSub">¿Qué quieres hacer?</p>
+        <p class="lock-sub" id="lockSub"></p>
         <div id="lockChoice" class="lock-actions">
           <button class="linkbtn" id="archBackupBtn" hidden>💾 Guarda una copia (hiciste cambios)</button>
           <div class="lock-btnrow">
