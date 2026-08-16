@@ -71,7 +71,7 @@
   /* same soft photo backdrop on the Archivo page (down to the tab bar) */
   #page-archivo::before{ content:""; position:fixed; left:0; right:0; z-index:0; pointer-events:none;
     top:0; bottom:var(--tabbar-h,64px);
-    background:url('./watermark.jpg?v=2') center center / cover no-repeat;
+    background:url('./watermark.jpg?v=2') center 72% / cover no-repeat;
     opacity:.2; }
   #page-archivo > *{position:relative;z-index:1}
   .scan-fab{ appearance:none;border:none;cursor:pointer; width:118px;height:118px;border-radius:50%;
