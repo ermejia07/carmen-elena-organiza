@@ -154,6 +154,12 @@
   .keypad button:active{transform:scale(.93);background:var(--line)}
   .keypad button[data-k="bio"],.keypad button[data-k="del"]{background:transparent;border-color:transparent;font-size:23px;color:var(--teal)}
   .lock-msg{color:var(--danger);font-size:13px;min-height:18px}
+  /* choice buttons pinned as a bar above the tabs (like the Agenda pills) */
+  .lock-actions{ position:fixed; left:0; right:0; bottom:var(--tabbar-h,64px); z-index:29;
+    background:#e6f0ea; background:color-mix(in srgb, var(--teal) 14%, var(--sand-2));
+    border-top:1px solid rgba(14,124,107,.15); padding:10px 14px; display:flex; flex-direction:column; gap:8px; }
+  .lock-btnrow{ display:flex; gap:8px; }
+  .lock-btnrow .btn{ flex:1; }
   .or{color:var(--ink-soft);font-size:12px;margin:6px 0}
   .linkbtn{appearance:none;border:none;background:transparent;cursor:pointer;color:var(--ink-soft);
     font-size:13px;text-decoration:underline;font-family:inherit;margin-top:4px}
@@ -333,13 +339,15 @@
     <!-- PAGE 2: ARCHIVO (locked) -->
     <section class="page" id="page-archivo" hidden>
       <div class="lockscreen" id="lockScreen">
-        <div class="lock-emblem">🔒</div>
+        <div class="lock-emblem" id="lockEmblem">🔒</div>
         <h2 id="lockTitle">Archivo protegido</h2>
         <p class="lock-sub" id="lockSub">¿Qué quieres hacer?</p>
-        <div id="lockChoice" style="display:flex;flex-direction:column;gap:10px;width:260px">
-          <button class="btn btn-primary" id="loginChoiceBtn">🔓 Login (ver documentos)</button>
-          <button class="btn btn-ghost" id="archivarChoiceBtn">📷 Archivar (escanear)</button>
-          <button class="linkbtn" id="archBackupBtn" hidden style="margin-top:2px">💾 Guarda una copia (hiciste cambios)</button>
+        <div id="lockChoice" class="lock-actions">
+          <button class="linkbtn" id="archBackupBtn" hidden>💾 Guarda una copia (hiciste cambios)</button>
+          <div class="lock-btnrow">
+            <button class="btn btn-primary" id="loginChoiceBtn">🔓 Ver documentos</button>
+            <button class="btn btn-ghost" id="archivarChoiceBtn">📷 Archivar</button>
+          </div>
         </div>
         <div id="loginArea" hidden style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%">
         <button class="btn btn-primary" id="faceBtn" hidden style="max-width:240px;margin-bottom:4px">🙂 Entrar con Face ID</button>
@@ -686,13 +694,14 @@
   function showLock(){   // choice screen: Login (ver) or Archivar (escanear)
     unlocked=false; $('lockScreen').hidden=false; $('archiveBody').hidden=true;
     $('lockChoice').hidden=false; $('loginArea').hidden=true;
-    $('lockTitle').textContent='Archivo';
-    $('lockSub').textContent='¿Qué quieres hacer?';
+    $('lockEmblem').hidden=true; $('lockTitle').hidden=true; $('lockSub').hidden=true;   // clean face, no extra text
     $('archBackupBtn').hidden = !changedSinceBackup;
+    layoutBottomBars();
   }
   function updateArchReminder(){ if(!$('page-archivo').hidden && !unlocked) $('archBackupBtn').hidden = !changedSinceBackup; }
   function showLogin(){   // the PIN keypad / Face ID unlock
     $('lockChoice').hidden=true; $('loginArea').hidden=false;
+    $('lockEmblem').hidden=false; $('lockTitle').hidden=false; $('lockSub').hidden=false;   // PIN screen keeps its guidance
     entry=''; firstPin='';
     $('lockMsg').textContent=''; $('bioSetup').hidden=true; $('donePanel').hidden=true;
     $('keypad').hidden=false; $('pinDots').hidden=false; $('faceBtn').hidden=true;
@@ -1025,7 +1034,7 @@
   function backupDone(){ changedSinceBackup=false; saveLastBackup(Date.now()); $('backupReminder').hidden=true; $('archBackupBtn').hidden=true; }
   async function exportBackup(){
     const blob=new Blob([JSON.stringify(collectBackup())],{type:'application/json'});
-    const name='CEO-copia-'+todayStr()+'.json';
+    const name='Copia-Carmen-Elena.json';   // same name every time → phone offers to Replace, keeping it to one file
     const file=new File([blob],name,{type:'application/json'});
     if(navigator.canShare && navigator.canShare({files:[file]})){ try{ await navigator.share({files:[file],title:'Copia de seguridad CEO'}); backupDone(); return; }catch(e){ if(e.name==='AbortError') return; } }
     const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),5000);
