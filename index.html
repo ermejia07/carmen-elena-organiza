@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#0e7c6b">
+<meta name="theme-color" content="#2b6fbf">
 <title>CEO — Carmen Elena Organiza</title>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -16,20 +16,20 @@
   :root{
     --sand:#fbf7f0; --sand-2:#f3ece0; --line:#e6dccb;
     --ink:#2a2622; --ink-soft:#6f665b;
-    --teal:#0e7c6b; --teal-deep:#0b5f52; --coral:#e8843c; --coral-deep:#cf6f2b;
+    --teal:#2b6fbf; --teal-deep:#1f5497; --coral:#e8843c; --coral-deep:#cf6f2b;
     --good:#2f8f5b; --danger:#c0492f;
     --shadow:0 6px 22px rgba(42,38,34,.10); --shadow-lift:0 10px 30px rgba(42,38,34,.16);
   }
   @media (prefers-color-scheme: dark){
     :root{ --sand:#181512; --sand-2:#221e19; --line:#332c24; --ink:#f3ece0; --ink-soft:#b3a897;
-      --teal:#2bb39c; --teal-deep:#1e8f7c; --coral:#f0975a; --coral-deep:#d97e3f;
+      --teal:#5a9fe6; --teal-deep:#4285cc; --coral:#f0975a; --coral-deep:#d97e3f;
       --shadow:0 6px 22px rgba(0,0,0,.35); --shadow-lift:0 10px 30px rgba(0,0,0,.5); }
   }
   :root[data-theme="light"]{ --sand:#fbf7f0; --sand-2:#f3ece0; --line:#e6dccb; --ink:#2a2622; --ink-soft:#6f665b;
-    --teal:#0e7c6b; --teal-deep:#0b5f52; --coral:#e8843c; --coral-deep:#cf6f2b;
+    --teal:#2b6fbf; --teal-deep:#1f5497; --coral:#e8843c; --coral-deep:#cf6f2b;
     --shadow:0 6px 22px rgba(42,38,34,.10); --shadow-lift:0 10px 30px rgba(42,38,34,.16); }
   :root[data-theme="dark"]{ --sand:#181512; --sand-2:#221e19; --line:#332c24; --ink:#f3ece0; --ink-soft:#b3a897;
-    --teal:#2bb39c; --teal-deep:#1e8f7c; --coral:#f0975a; --coral-deep:#d97e3f;
+    --teal:#5a9fe6; --teal-deep:#4285cc; --coral:#f0975a; --coral-deep:#d97e3f;
     --shadow:0 6px 22px rgba(0,0,0,.35); --shadow-lift:0 10px 30px rgba(0,0,0,.5); }
 
   *{box-sizing:border-box;margin:0;padding:0}
@@ -42,10 +42,10 @@
     padding-bottom:calc(104px + env(safe-area-inset-bottom))}
 
   header{ padding:9px 18px; padding-top:calc(8px + env(safe-area-inset-top));
-    border-bottom:1px solid rgba(14,124,107,.15);
-    background:#e6f0ea; background:color-mix(in srgb, var(--teal) 14%, var(--sand-2));
+    border-bottom:1px solid rgba(43,111,191,.15);
+    background:#e6eff9; background:color-mix(in srgb, var(--teal) 14%, var(--sand-2));
     display:flex;align-items:center;justify-content:center;gap:10px; }
-  .mark{ width:34px;height:34px;margin:0; filter:drop-shadow(0 3px 8px rgba(14,124,107,.25)); }
+  .mark{ width:34px;height:34px;margin:0; filter:drop-shadow(0 3px 8px rgba(43,111,191,.25)); }
   .mark svg{display:block;width:100%;height:100%}
   .mark .field{fill:var(--teal)}
   .mark .edge{fill:none;stroke:#fff;stroke-width:5;stroke-linejoin:round}
@@ -65,13 +65,13 @@
   /* soft full-screen photo watermark behind the Agenda (home) page */
   #page-agenda::before{ content:""; position:fixed; left:0; right:0; z-index:0; pointer-events:none;
     top:0; bottom:calc(var(--tabbar-h,64px) + var(--pills-h,56px));
-    background:url('./watermark.jpg?v=2') center center / cover no-repeat;
+    background:url('./watermark.jpg?v=2') center 46% / cover no-repeat;
     opacity:.2; }
   #page-agenda > *{position:relative;z-index:1}
   /* same soft photo backdrop on the Archivo page (down to the tab bar) */
   #page-archivo::before{ content:""; position:fixed; left:0; right:0; z-index:0; pointer-events:none;
     top:0; bottom:var(--tabbar-h,64px);
-    background:url('./watermark.jpg?v=2') center 72% / cover no-repeat;
+    background:url('./watermark.jpg?v=2') center 88% / cover no-repeat;
     opacity:.2; }
   #page-archivo > *{position:relative;z-index:1}
   .scan-fab{ appearance:none;border:none;cursor:pointer; width:118px;height:118px;border-radius:50%;
@@ -156,8 +156,8 @@
   .lock-msg{color:var(--danger);font-size:13px;min-height:18px}
   /* choice buttons pinned as a bar above the tabs (like the Agenda pills) */
   .lock-actions{ position:fixed; left:0; right:0; bottom:var(--tabbar-h,64px); z-index:29;
-    background:#e6f0ea; background:color-mix(in srgb, var(--teal) 14%, var(--sand-2));
-    border-top:1px solid rgba(14,124,107,.15); padding:10px 14px; display:flex; flex-direction:column; gap:8px; }
+    background:#e6eff9; background:color-mix(in srgb, var(--teal) 14%, var(--sand-2));
+    border-top:1px solid rgba(43,111,191,.15); padding:10px 14px; display:flex; flex-direction:column; gap:8px; }
   .lock-btnrow{ display:flex; gap:8px; }
   .lock-btnrow .btn{ flex:1; padding:9px 15px; font-size:14px; }
   .or{color:var(--ink-soft);font-size:12px;margin:6px 0}
@@ -238,16 +238,16 @@
   #agTabs .chip b{margin-left:3px;font-variant-numeric:tabular-nums}
   /* pills pinned as a fixed bar directly above the two bottom tabs — always in the same spot */
   #agTabsRow{ position:fixed; left:0; right:0; bottom:var(--tabbar-h,64px); z-index:29;
-    background:#e6f0ea; background:color-mix(in srgb, var(--teal) 14%, var(--sand-2));
-    border-top:1px solid rgba(14,124,107,.15); padding:8px 18px; }
+    background:#e6eff9; background:color-mix(in srgb, var(--teal) 14%, var(--sand-2));
+    border-top:1px solid rgba(43,111,191,.15); padding:8px 18px; }
   /* small "+" button, ~1/4 the width of the two toggle buttons, sitting between them */
   .ag-add{flex:0.25;appearance:none;border:none;cursor:pointer;padding:9px 0;border-radius:9px;
-    background:var(--coral);color:#fff;font-family:inherit;font-size:16px;font-weight:700;
+    background:#f4b3d2;color:#fff;font-family:inherit;font-size:16px;font-weight:700;
     display:grid;place-items:center;transition:background .15s,transform .1s}
-  .ag-add:active{background:var(--coral-deep);transform:scale(.96)}
+  .ag-add:active{background:#e88fb8;transform:scale(.96)}
   #listaView{display:flex;flex-direction:column;gap:14px}
   .ag-toggle{display:flex;gap:6px;background:var(--sand-2);border:1px solid var(--line);border-radius:12px;padding:4px}
-  .agv{flex:1;appearance:none;border:none;background:rgba(14,124,107,.10);background:color-mix(in srgb, var(--teal) 12%, transparent);cursor:pointer;padding:9px;border-radius:9px;font-family:inherit;font-size:14px;font-weight:640;color:var(--teal)}
+  .agv{flex:1;appearance:none;border:none;background:rgba(43,111,191,.10);background:color-mix(in srgb, var(--teal) 12%, transparent);cursor:pointer;padding:9px;border-radius:9px;font-family:inherit;font-size:14px;font-weight:640;color:var(--teal)}
   .agv.active{background:var(--teal);color:#fff}
   .cal-head{display:flex;align-items:center;justify-content:space-between;padding:2px 2px;margin-top:2px}
   .cal-head b{font-family:Georgia,serif;font-size:18px}
