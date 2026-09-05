@@ -336,6 +336,8 @@
     <!-- PAGE 1: ESCANEAR (blank) -->
     <!-- Hidden inputs used by the scan + restore flows (shared across pages) -->
     <input type="file" id="fileInput" accept="image/*" capture="environment" hidden>
+    <!-- Same as fileInput but WITHOUT capture, so the phone offers Photos and Files instead of opening the camera. -->
+    <input type="file" id="pickInput" accept="image/*" hidden>
     <input type="file" id="importFile" accept="application/json,.json" hidden>
 
     <!-- PAGE 2: ARCHIVO (locked) -->
@@ -387,7 +389,8 @@
           <span class="count" id="countOrg">0</span>
           <button class="lockbtn" id="relockBtn" title="Bloquear" aria-label="Bloquear">🔒</button>
         </div>
-        <button class="btn btn-primary" id="scanInArchiveBtn" style="width:100%;margin-bottom:12px">📷 Escanear un documento</button>
+        <button class="btn btn-primary" id="scanInArchiveBtn" style="width:100%;margin-bottom:8px">📷 Escanear un documento</button>
+        <button class="btn btn-ghost" id="pickInArchiveBtn" style="width:100%;margin-bottom:12px">🖼️ Desde el teléfono</button>
         <input type="search" id="search" class="search" placeholder="Buscar por nombre, remitente o tema…">
         <p class="finder-hint">Toca los <b>finders</b> para encontrar tus documentos (puedes elegir varios)</p>
         <div class="pillrow" id="orgPills"></div>
@@ -793,20 +796,26 @@
   }
   function suggestName(){ const d=new Date(); const m=d.toLocaleDateString('es-ES',{month:'long'}); return 'Documento — '+m.charAt(0).toUpperCase()+m.slice(1); }
   $('scanInArchiveBtn').onclick = ()=> $('fileInput').click();
-  $('fileInput').onchange = async e=>{
+  $('pickInArchiveBtn').onclick = ()=> $('pickInput').click();
+  // Same naming sheet whether the picture came from the camera or from the phone.
+  let lastSource='fileInput';   // which door the picture came through
+  async function takeIn(e){
     const file=e.target.files[0]; e.target.value=''; if(!file) return;
+    lastSource=e.target.id;
     pendingImg=await processImage(file); pendingFinders=new Set();
     $('previewImg').src=pendingImg; $('titleInput').value=suggestName();
     buildPills($('namePills'), pendingFinders, null);
     openSheet('naming'); setTimeout(()=>{ $('titleInput').focus(); $('titleInput').select(); },300);
-  };
+  }
+  $('fileInput').onchange = takeIn;
+  $('pickInput').onchange = takeIn;
   $('saveBtn').onclick = ()=>{
     const title=($('titleInput').value||'').trim()||suggestName();
     const d={ id:'d'+Date.now(), title, date:Date.now(), docDate:new Date().toISOString().slice(0,10),
       sender:'', subject:'', content:'', finders:Array.from(pendingFinders), img:pendingImg };
     docs.push(d); putDoc(d); refresh(); closeSheet('naming'); pendingImg=null; showToast('✓ Documento guardado'); updateArchReminder();
   };
-  $('retakeBtn').onclick = ()=>{ closeSheet('naming'); pendingImg=null; $('fileInput').click(); };
+  $('retakeBtn').onclick = ()=>{ closeSheet('naming'); pendingImg=null; $(lastSource).click(); };
 
   /* ---- Viewer ---- */
   function openViewer(id){
