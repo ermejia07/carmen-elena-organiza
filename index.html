@@ -413,7 +413,7 @@
           <button class="linkbtn" id="importBtn">⬆️ Restaurar una copia</button>
         </div>
         <!-- Bump this together with the cache key in sw.js on every publish. -->
-        <div class="app-ver">v14</div>
+        <div class="app-ver">v15</div>
       </div>
     </section>
 
@@ -588,11 +588,13 @@
   const KEY="ceo_docs_v1", PIN_KEY="ceo_pin", BIO_KEY="ceo_bioId";
   const $ = id => document.getElementById(id);
   const FINDERS = [
-    {key:'Bancos', emoji:'🏦'}, {key:'Fincas', emoji:'🏡'}, {key:'Contratos', emoji:'✍️'},
+    {key:'Bancos', emoji:'🏦'}, {key:'Propiedades', emoji:'🏡'}, {key:'Contratos', emoji:'✍️'},
     {key:'Hermanos', emoji:'👪'}, {key:'Pagos', emoji:'💳'}, {key:'Año', emoji:'📅'},
     {key:'Médico', emoji:'🩺'}, {key:'Hogar', emoji:'🏠'}, {key:'ID', emoji:'🪪'}, {key:'Otro', emoji:'📌'}
   ];
   const FMAP = Object.fromEntries(FINDERS.map(f=>[f.key,f]));
+  const RENAMED = {Fincas:'Propiedades'};   // old finder names -> new ones
+  const fixFinders = list => (list||[]).map(k => RENAMED[k] || k);
   const fLabel = k => (FMAP[k] ? FMAP[k].emoji+' '+k : k);
 
   let docs = [];
@@ -615,7 +617,7 @@
   // documents already saved; the newest photo is committed the moment you tap Guardar.
   function putDoc(d){ changedSinceBackup=true; return new Promise(res=>{ if(!DB) return res(false); try{ const q=DB.transaction('docs','readwrite').objectStore('docs').put(d); q.onsuccess=()=>res(true); q.onerror=()=>res(false); }catch(e){ res(false); } }); }
   function delDocDb(id){ changedSinceBackup=true; return new Promise(res=>{ if(!DB) return res(false); try{ const q=DB.transaction('docs','readwrite').objectStore('docs').delete(id); q.onsuccess=()=>res(true); q.onerror=()=>res(false); }catch(e){ res(false); } }); }
-  function getAllDocs(){ return new Promise(res=>{ if(!DB) return res([]); try{ const q=DB.transaction('docs','readonly').objectStore('docs').getAll(); q.onsuccess=()=>res(q.result||[]); q.onerror=()=>res([]); }catch(e){ res([]); } }); }
+  function getAllDocs(){ return new Promise(res=>{ if(!DB) return res([]); try{ const q=DB.transaction('docs','readonly').objectStore('docs').getAll(); q.onsuccess=()=>res((q.result||[]).map(d=>(d.finders=fixFinders(d.finders), d))); q.onerror=()=>res([]); }catch(e){ res([]); } }); }
   async function initStore(){
     DB = await idbOpen();
     if(navigator.storage && navigator.storage.persist){ try{ await navigator.storage.persist(); }catch(e){} }
