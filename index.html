@@ -402,7 +402,8 @@
           <button class="lockbtn" id="relockBtn" title="Bloquear" aria-label="Bloquear">🔒</button>
         </div>
         <button class="btn btn-primary" id="scanInArchiveBtn" style="width:100%;margin-bottom:8px">📷 Escanear un documento</button>
-        <button class="btn btn-ghost" id="pickInArchiveBtn" style="width:100%;margin-bottom:12px">🖼️ Desde el teléfono</button>
+        <button class="btn btn-ghost" id="pickInArchiveBtn" style="width:100%;margin-bottom:8px">🖼️ Desde el teléfono</button>
+        <button class="btn btn-ghost" id="pasteBtn" style="width:100%;margin-bottom:12px">📋 Pegar</button>
         <input type="search" id="search" class="search" placeholder="Buscar por nombre, remitente o tema…">
         <p class="finder-hint">Toca los <b>finders</b> para encontrar tus documentos (puedes elegir varios)</p>
         <div class="pillrow" id="orgPills"></div>
@@ -413,7 +414,7 @@
           <button class="linkbtn" id="importBtn">⬆️ Restaurar una copia</button>
         </div>
         <!-- Bump this together with the cache key in sw.js on every publish. -->
-        <div class="app-ver">v15</div>
+        <div class="app-ver">v16</div>
       </div>
     </section>
 
@@ -823,9 +824,7 @@
   $('pickInArchiveBtn').onclick = ()=> $('pickInput').click();
   // Same naming sheet whether the picture came from the camera or from the phone.
   let lastSource='fileInput';   // which door the picture came through
-  async function takeIn(e){
-    const file=e.target.files[0]; e.target.value=''; if(!file) return;
-    lastSource=e.target.id;
+  async function openNamingFor(file){
     const asPdf = file.type==='application/pdf';
     if(asPdf && file.size > 12*1024*1024){ showToast('Ese PDF es muy grande'); return; }
     pendingImg = asPdf ? await readAsDataUrl(file) : await processImage(file);
@@ -836,8 +835,34 @@
     buildPills($('namePills'), pendingFinders, null);
     openSheet('naming'); setTimeout(()=>{ $('titleInput').focus(); $('titleInput').select(); },300);
   }
+  async function takeIn(e){
+    const file=e.target.files[0]; e.target.value=''; if(!file) return;
+    lastSource=e.target.id;
+    await openNamingFor(file);
+  }
   $('fileInput').onchange = takeIn;
   $('pickInput').onchange = takeIn;
+
+  // Copy a PDF or a picture anywhere on the phone, then paste it straight in here.
+  $('pasteBtn').onclick = async ()=>{
+    if(!navigator.clipboard || !navigator.clipboard.read){
+      showToast('Este teléfono no deja pegar archivos'); return;
+    }
+    let items;
+    try{ items = await navigator.clipboard.read(); }
+    catch(e){ showToast('No pude leer lo copiado'); return; }
+    for(const it of items){
+      const type = (it.types||[]).find(t => t==='application/pdf' || t.indexOf('image/')===0);
+      if(!type) continue;
+      let blob;
+      try{ blob = await it.getType(type); }catch(e){ continue; }
+      const ext = type==='application/pdf' ? '.pdf' : '';
+      lastSource='pickInput';
+      await openNamingFor(new File([blob], (type==='application/pdf'?'Documento':'Imagen')+ext, {type}));
+      return;
+    }
+    showToast('No hay un documento copiado');
+  };
   $('saveBtn').onclick = ()=>{
     const title=($('titleInput').value||'').trim()||suggestName();
     const d={ id:'d'+Date.now(), title, date:Date.now(), docDate:new Date().toISOString().slice(0,10),
