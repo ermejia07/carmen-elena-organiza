@@ -685,7 +685,7 @@
   async function bioEnroll(){
     const ch=crypto.getRandomValues(new Uint8Array(16)), uid=crypto.getRandomValues(new Uint8Array(16));
     const cred=await navigator.credentials.create({publicKey:{ challenge:ch, rp:{name:'CEO'},
-      user:{id:uid,name:'carmen',displayName:'Carmen Elena'},
+      user:{id:uid,name:'ceo',displayName:'CEO'},
       pubKeyCredParams:[{type:'public-key',alg:-7},{type:'public-key',alg:-257}],
       authenticatorSelection:{authenticatorAttachment:'platform',userVerification:'required'}, timeout:60000 }});
     bioIdVal = b64(cred.rawId); idbSet('bio',bioIdVal); try{ localStorage.setItem(BIO_KEY,bioIdVal); }catch(e){} return true;
@@ -887,7 +887,7 @@
   function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
   function entryDay(e){ return (e.date && e.date.length>=10) ? e.date.slice(0,10) : (e.createdAt||'').slice(0,10); }
   function fmtDay(ymd){ try{ const p=(ymd||'').split('-').map(Number); if(p.length<3||!p[0]) return ''; return new Date(p[0],p[1]-1,p[2]).toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'}); }catch(e){ return ''; } }
-  function greetText(){ const h=new Date().getHours(); return (h<12?'Buenos días':(h<19?'Buenas tardes':'Buenas noches'))+', Carmen'; }
+  function greetText(){ const h=new Date().getHours(); return (h<12?'Buenos días':(h<19?'Buenas tardes':'Buenas noches')); }
 
   function renderAgenda(){
     layoutBottomBars();
@@ -1048,7 +1048,7 @@
   function backupDone(){ changedSinceBackup=false; saveLastBackup(Date.now()); $('backupReminder').hidden=true; $('archBackupBtn').hidden=true; }
   async function exportBackup(){
     const blob=new Blob([JSON.stringify(collectBackup())],{type:'application/json'});
-    const name='Copia-Carmen-Elena.json';   // same name every time → phone offers to Replace, keeping it to one file
+    const name='Copia-CEO.json';   // same name every time → phone offers to Replace, keeping it to one file
     const file=new File([blob],name,{type:'application/json'});
     if(navigator.canShare && navigator.canShare({files:[file]})){ try{ await navigator.share({files:[file],title:'Copia de seguridad CEO'}); backupDone(); return; }catch(e){ if(e.name==='AbortError') return; } }
     const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),5000);
