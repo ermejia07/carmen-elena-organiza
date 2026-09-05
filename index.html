@@ -129,6 +129,14 @@
     border-radius:16px;padding:12px;cursor:pointer; box-shadow:var(--shadow); transition:transform .1s ease; }
   .card:active{transform:scale(.99)}
   .thumb{ width:58px;height:58px;flex:none;border-radius:12px;object-fit:cover; background:var(--line);border:1px solid var(--line); }
+  /* PDFs have no picture, so they get a tile in the same shape as a thumbnail */
+  .thumb.is-pdf{ display:grid;place-items:center;font-size:26px;background:var(--fill);border-color:var(--on-fill); }
+  .pdf-face{ width:100%;min-height:150px;border-radius:14px;background:var(--fill);border:1px solid var(--on-fill);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--on-fill);padding:18px 14px;text-align:center; }
+  .pdf-face .ico{ font-size:40px;line-height:1 }
+  .pdf-face .nm{ font-size:14px;font-weight:650;word-break:break-word }
+  .pdf-face .op{ appearance:none;border:none;cursor:pointer;font-family:inherit;
+    background:var(--on-fill);color:var(--fill);border-radius:100px;padding:9px 20px;font-size:14px;font-weight:700;margin-top:2px }
   .card-body{flex:1;min-width:0}
   .card-title{font-weight:620;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .card-date{font-size:12.5px;color:var(--ink-soft);margin-top:2px}
@@ -340,7 +348,7 @@
     <!-- Hidden inputs used by the scan + restore flows (shared across pages) -->
     <input type="file" id="fileInput" accept="image/*" capture="environment" hidden>
     <!-- Same as fileInput but WITHOUT capture, so the phone offers Photos and Files instead of opening the camera. -->
-    <input type="file" id="pickInput" accept="image/*" hidden>
+    <input type="file" id="pickInput" accept="image/*,application/pdf" hidden>
     <input type="file" id="importFile" accept="application/json,.json" hidden>
 
     <!-- PAGE 2: ARCHIVO (locked) -->
@@ -483,6 +491,7 @@
     <h2>¿Se ve bien?</h2>
     <p class="sub">Aprueba, ponle nombre y elige sus finders</p>
     <img class="preview-img" id="previewImg" alt="Vista previa">
+    <div class="pdf-face" id="previewPdf" hidden><div class="ico">📄</div><div class="nm" id="previewPdfName">PDF</div></div>
     <label class="fld">Finders (elige los que quieras)</label>
     <div class="pillrow" id="namePills"></div>
     <label class="fld" for="titleInput">Nombre del documento</label>
@@ -498,6 +507,7 @@
 <div class="overlay" id="viewer">
   <div class="sheet">
     <img id="viewImg" alt="">
+    <div class="pdf-face" id="viewPdf" hidden><div class="ico">📄</div><div class="nm">Documento PDF</div><button class="op" id="openPdfBtn" type="button">Abrir el PDF</button></div>
     <div class="view-meta">
       <div class="t" id="viewTitle"></div>
       <div class="d" id="viewDate"></div>
@@ -649,7 +659,8 @@
   function cardEl(d){
     const card=document.createElement('div'); card.className='card';
     const finders=(d.finders||[]).slice(0,4).map(k=>'<span class="mini">'+fLabel(k)+'</span>').join('');
-    card.innerHTML='<img class="thumb" src="'+d.img+'" alt="">'+
+    const face = isPdf(d.img) ? '<div class="thumb is-pdf">📄</div>' : '<img class="thumb" src="'+d.img+'" alt="">';
+    card.innerHTML=face+
       '<div class="card-body"><div class="card-title"></div><div class="card-date"></div>'+
       '<div class="card-finders">'+finders+'</div></div>'+
       '<svg class="chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>';
@@ -787,6 +798,11 @@
   window.addEventListener('orientationchange', ()=> setTimeout(layoutBottomBars,200));
 
   /* ---- Capture ---- */
+  function isPdf(src){ return typeof src==='string' && src.slice(0,20).indexOf('application/pdf')>-1; }
+  function readAsDataUrl(file){ return new Promise(res=>{ const r=new FileReader(); r.onload=e=>res(e.target.result); r.readAsDataURL(file); }); }
+  function pdfBlob(src){ const b64=src.slice(src.indexOf(',')+1); const bin=atob(b64);
+    const u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i);
+    return new Blob([u],{type:'application/pdf'}); }
   function processImage(file){
     return new Promise(res=>{ const reader=new FileReader();
       reader.onload=e=>{ const img=new Image();
@@ -805,8 +821,13 @@
   async function takeIn(e){
     const file=e.target.files[0]; e.target.value=''; if(!file) return;
     lastSource=e.target.id;
-    pendingImg=await processImage(file); pendingFinders=new Set();
-    $('previewImg').src=pendingImg; $('titleInput').value=suggestName();
+    const asPdf = file.type==='application/pdf';
+    if(asPdf && file.size > 12*1024*1024){ showToast('Ese PDF es muy grande'); return; }
+    pendingImg = asPdf ? await readAsDataUrl(file) : await processImage(file);
+    pendingFinders=new Set();
+    $('previewImg').hidden = asPdf; $('previewPdf').hidden = !asPdf;
+    if(asPdf) $('previewPdfName').textContent = file.name || 'PDF'; else $('previewImg').src=pendingImg;
+    $('titleInput').value = asPdf ? (file.name||'').replace(/\.pdf$/i,'') || suggestName() : suggestName();
     buildPills($('namePills'), pendingFinders, null);
     openSheet('naming'); setTimeout(()=>{ $('titleInput').focus(); $('titleInput').select(); },300);
   }
@@ -823,11 +844,19 @@
   /* ---- Viewer ---- */
   function openViewer(id){
     const d=docs.find(x=>x.id===id); if(!d) return; viewingId=id;
-    $('viewImg').src=d.img; $('viewTitle').textContent=d.title; $('viewDate').textContent='Guardado el '+fmtDate(d.date);
+    const asPdf=isPdf(d.img);
+    $('viewImg').hidden=asPdf; $('viewPdf').hidden=!asPdf;
+    if(asPdf) $('viewImg').removeAttribute('src'); else $('viewImg').src=d.img;
+    $('viewTitle').textContent=d.title; $('viewDate').textContent='Guardado el '+fmtDate(d.date);
     $('dDate').value=d.docDate||''; $('dSender').value=d.sender||''; $('dSubject').value=d.subject||''; $('dContent').value=d.content||'';
     viewerFinders=new Set(d.finders||[]); buildPills($('viewPills'), viewerFinders, null);
     openSheet('viewer');
   }
+  $('openPdfBtn').onclick = ()=>{
+    const d=docs.find(x=>x.id===viewingId); if(!d||!isPdf(d.img)) return;
+    const url=URL.createObjectURL(pdfBlob(d.img));
+    window.open(url,'_blank'); setTimeout(()=>URL.revokeObjectURL(url),60000);
+  };
   $('closeViewBtn').onclick = ()=> closeSheet('viewer');
   $('saveDetailsBtn').onclick = ()=>{
     const d=docs.find(x=>x.id===viewingId); if(!d) return;
@@ -865,7 +894,10 @@
     return new Blob([b],{type:'application/pdf'});
   }
   async function exportPdf(d){
-    showToast('Preparando PDF…'); const {w,h}=await imgDims(d.img); const blob=jpegToPdfBlob(d.img,w,h); const name=safeName(d.title);
+    showToast('Preparando PDF…'); const name=safeName(d.title);
+    let blob;
+    if(isPdf(d.img)){ blob=pdfBlob(d.img); }              // already a PDF — send it as it came in
+    else { const {w,h}=await imgDims(d.img); blob=jpegToPdfBlob(d.img,w,h); }
     const file=new File([blob],name,{type:'application/pdf'});
     if(navigator.canShare && navigator.canShare({files:[file]})){ try{ await navigator.share({files:[file],title:d.title}); return; }catch(e){ if(e.name==='AbortError') return; } }
     const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name;
