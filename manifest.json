@@ -1,5 +1,5 @@
 {
-  "name": "CEO — Carmen Elena Organiza",
+  "name": "CEO — Collige et Ordina",
   "short_name": "CEO",
   "description": "Escanea, nombra y organiza tus documentos — privado, en tu teléfono.",
   "lang": "es",
@@ -9,7 +9,7 @@
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#fbf7f0",
-  "theme_color": "#0e7c6b",
+  "theme_color": "#dbe9fa",
   "icons": [
     { "src": "icon-180.png", "sizes": "180x180", "type": "image/png", "purpose": "any" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }

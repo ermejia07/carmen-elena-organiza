@@ -1,5 +1,5 @@
 /* Carmen Elena Organiza — offline service worker */
-const CACHE = 'carelena-v6';
+const CACHE = 'carelena-v11';
 const ASSETS = ['./', './index.html', './manifest.json', './icon-180.png', './icon-512.png', './watermark.jpg?v=2', './watermark-archivo.jpg?v=1'];
 
 self.addEventListener('install', e => {
