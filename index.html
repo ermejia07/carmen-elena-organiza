@@ -126,6 +126,16 @@
   .chip.active{background:var(--fill);border-color:var(--on-fill);color:var(--on-fill)}
   .chip.add{border-style:dashed;color:var(--teal);font-size:17px;padding:8px 17px;line-height:1.15}
 
+  /* ---- Hojas de un mismo documento ---- */
+  .pager{ display:flex;align-items:center;justify-content:center;gap:10px;margin-top:10px }
+  .pager .pg{ appearance:none;border:1.5px solid var(--line);background:var(--sand-2);color:var(--ink);
+    cursor:pointer;border-radius:100px;width:40px;height:36px;font-size:19px;line-height:1;font-family:inherit }
+  .pager .pg:disabled{opacity:.35;cursor:default}
+  .pager .pg-del{font-size:15px;color:var(--danger);border-color:var(--line)}
+  .pager .pg-n{ font-size:13.5px;font-weight:650;color:var(--ink-soft);min-width:74px;text-align:center;
+    font-variant-numeric:tabular-nums }
+  .mini.pages{background:var(--fill);color:var(--on-fill)}
+
   /* ---- Recortar ---- */
   .crop-stage{ position:relative;width:100%;margin-bottom:14px;border-radius:14px;overflow:hidden;
     background:var(--sand-2);border:1px solid var(--line);touch-action:none;user-select:none; }
@@ -565,10 +575,12 @@
     <button class="btn btn-ghost" id="cropBtn" style="width:100%;margin:-8px 0 4px">Recortar</button>
     <div class="pdf-face" id="previewPdf" hidden><div class="ico">📄</div><div class="nm" id="previewPdfName">PDF</div></div>
     <div class="text-face" id="previewText" hidden></div>
-    <label class="fld">Finders (elige los que quieras)</label>
-    <div class="pillrow" id="namePills"></div>
-    <label class="fld" for="titleInput">Nombre del documento</label>
-    <input type="text" id="titleInput" placeholder="Ej: Recibo de luz — agosto" autocomplete="off">
+    <div id="namingFields">
+      <label class="fld">Finders (elige los que quieras)</label>
+      <div class="pillrow" id="namePills"></div>
+      <label class="fld" for="titleInput">Nombre del documento</label>
+      <input type="text" id="titleInput" placeholder="Ej: Recibo de luz — agosto" autocomplete="off">
+    </div>
     <div class="btn-row">
       <button class="btn btn-ghost" id="retakeBtn">Volver a tomar</button>
       <button class="btn btn-primary" id="saveBtn">Guardar</button>
@@ -601,6 +613,13 @@
     <img id="viewImg" alt="">
     <div class="pdf-face" id="viewPdf" hidden><div class="ico">📄</div><div class="nm">Documento PDF</div><button class="op" id="openPdfBtn" type="button">Abrir el PDF</button></div>
     <div class="text-face" id="viewText" hidden></div>
+    <div class="pager" id="viewPager" hidden>
+      <button type="button" class="pg" id="pgPrev" aria-label="Hoja anterior">‹</button>
+      <span class="pg-n" id="pgCount"></span>
+      <button type="button" class="pg" id="pgNext" aria-label="Hoja siguiente">›</button>
+      <button type="button" class="pg pg-del" id="pgDel" aria-label="Quitar esta hoja">🗑</button>
+    </div>
+    <button class="btn btn-ghost" id="addPageBtn" style="width:100%;margin-top:10px">Agregar una hoja</button>
     <div class="view-meta">
       <div class="t" id="viewTitle"></div>
       <div class="d" id="viewDate"></div>
@@ -713,7 +732,12 @@
     r.onsuccess=()=>res(r.result); r.onerror=()=>res(null); }catch(e){ res(null); } }); }
   function idbGet(k){ return new Promise(res=>{ if(!DB) return res(null); try{ const q=DB.transaction('kv','readonly').objectStore('kv').get(k); q.onsuccess=()=>res(q.result==null?null:q.result); q.onerror=()=>res(null); }catch(e){ res(null); } }); }
   function idbSet(k,v){ return new Promise(res=>{ if(!DB) return res(false); try{ const q=DB.transaction('kv','readwrite').objectStore('kv').put(v,k); q.onsuccess=()=>res(true); q.onerror=()=>res(false); }catch(e){ res(false); } }); }
-  function normalize(d){ if(!Array.isArray(d.finders)){ d.finders=[]; if(d.category) d.finders.push(d.category==='Dinero'?'Bancos':d.category); } return d; }
+  function normalize(d){ if(!Array.isArray(d.finders)){ d.finders=[]; if(d.category) d.finders.push(d.category==='Dinero'?'Bancos':d.category); }
+    // A document can hold several sheets. Everything saved before this had one,
+    // kept in d.img — that stays the first sheet, so nothing needs converting.
+    if(!Array.isArray(d.pages)) d.pages = d.img ? [d.img] : [];
+    return d; }
+  const pagesOf = d => (Array.isArray(d.pages)&&d.pages.length) ? d.pages : (d.img?[d.img]:[]);
   // Each document is its OWN record → an atomic write. A crash can never damage
   // documents already saved; the newest photo is committed the moment you tap Guardar.
   function putDoc(d){ changedSinceBackup=true; return new Promise(res=>{ if(!DB) return res(false); try{ const q=DB.transaction('docs','readwrite').objectStore('docs').put(d); q.onsuccess=()=>res(true); q.onerror=()=>res(false); }catch(e){ res(false); } }); }
@@ -782,10 +806,13 @@
   /* ---- Cards / archive list ---- */
   function cardEl(d){
     const card=document.createElement('div'); card.className='card';
-    const finders=(d.finders||[]).slice(0,4).map(k=>'<span class="mini">'+fLabel(k)+'</span>').join('');
-    const face = isPdf(d.img) ? '<div class="thumb is-pdf">📄</div>'
-               : isText(d.img) ? '<div class="thumb is-text">📝</div>'
-               : '<img class="thumb" src="'+d.img+'" alt="">';
+    const np=pagesOf(d).length;
+    const finders=(np>1?'<span class="mini pages">'+np+' hojas</span>':'')+
+      (d.finders||[]).slice(0,4).map(k=>'<span class="mini">'+fLabel(k)+'</span>').join('');
+    const first = pagesOf(d)[0] || d.img;
+    const face = isPdf(first) ? '<div class="thumb is-pdf">📄</div>'
+               : isText(first) ? '<div class="thumb is-text">📝</div>'
+               : '<img class="thumb" src="'+first+'" alt="">';
     card.innerHTML=face+
       '<div class="card-body"><div class="card-title"></div><div class="card-date"></div>'+
       '<div class="card-finders">'+finders+'</div></div>'+
@@ -864,7 +891,7 @@
   $('wayCam').onclick   = ()=>{ closeSheet('archivar'); $('fileInput').click(); };
   $('wayFile').onclick  = ()=>{ closeSheet('archivar'); $('pickInput').click(); };
   $('wayPaste').onclick = ()=>{ closeSheet('archivar'); pasteIn(); };
-  $('wayCancel').onclick= ()=> closeSheet('archivar');
+  $('wayCancel').onclick= ()=>{ closeSheet('archivar'); if(addingTo){ const id=addingTo; addingTo=null; openViewer(id); } };
   $('archBackupBtn').onclick=exportBackup;
   function doUnlock(){
     unlocked=true; $('lockScreen').hidden=true; $('archiveBody').hidden=false;
@@ -977,7 +1004,15 @@
     $('titleInput').value = asText ? suggestFromText(textBody)
       : (asPdf ? (file.name||'').replace(/\.pdf$/i,'') || suggestName() : suggestName());
     buildPills($('namePills'), pendingFinders, null);
-    openSheet('naming'); setTimeout(()=>{ $('titleInput').focus(); $('titleInput').select(); },300);
+    const adding = !!addingTo;
+    $('namingFields').hidden = adding;
+    $('naming').querySelector('h2').textContent = adding ? '¿Se ve bien?' : '¿Se ve bien?';
+    $('naming').querySelector('.sub').textContent = adding
+      ? 'Se agrega como una hoja más de este documento'
+      : 'Aprueba, ponle nombre y elige sus finders';
+    $('saveBtn').textContent = adding ? 'Agregar la hoja' : 'Guardar';
+    openSheet('naming');
+    if(!adding) setTimeout(()=>{ $('titleInput').focus(); $('titleInput').select(); },300);
   }
   async function takeIn(e){
     const file=e.target.files[0]; e.target.value=''; if(!file) return;
@@ -1019,29 +1054,72 @@
   }
   $('pasteBtn').onclick = pasteIn;
   $('saveBtn').onclick = ()=>{
+    if(addingTo){
+      const d=docs.find(x=>x.id===addingTo);
+      if(d){
+        d.pages = pagesOf(d).concat([pendingImg]);
+        putDoc(d); refresh();
+        closeSheet('naming');
+        addingTo=null; pendingImg=null; pendingRaw=null; pendingText='';
+        viewPage = pagesOf(d).length-1; renderPage(); openSheet('viewer');
+        showToast('✓ Hoja agregada');
+        return;
+      }
+      addingTo=null;
+    }
     const title=($('titleInput').value||'').trim()||suggestName();
     const d={ id:'d'+Date.now(), title, date:Date.now(), docDate:new Date().toISOString().slice(0,10),
-      sender:'', subject:'', content:pendingText||'', finders:Array.from(pendingFinders), img:pendingImg };
+      sender:'', subject:'', content:pendingText||'', finders:Array.from(pendingFinders),
+      img:pendingImg, pages:[pendingImg] };
     docs.push(d); putDoc(d); refresh(); closeSheet('naming'); pendingImg=null; pendingRaw=null; pendingText='';
     showToast('✓ Documento guardado'); updateArchReminder();
   };
-  $('retakeBtn').onclick = ()=>{ closeSheet('naming'); pendingImg=null; pendingRaw=null; $(lastSource).click(); };
+  $('retakeBtn').onclick = ()=>{ closeSheet('naming'); pendingImg=null; pendingRaw=null;
+    if(addingTo){ const id=addingTo; addingTo=null; openViewer(id); return; }
+    $(lastSource).click(); };
 
   /* ---- Viewer ---- */
-  function openViewer(id){
-    const d=docs.find(x=>x.id===id); if(!d) return; viewingId=id;
-    const asPdf=isPdf(d.img), asText=isText(d.img);
+  let viewPage=0;
+  function renderPage(){
+    const d=docs.find(x=>x.id===viewingId); if(!d) return;
+    const pages=pagesOf(d); if(viewPage>=pages.length) viewPage=Math.max(0,pages.length-1);
+    const src=pages[viewPage]||'';
+    const asPdf=isPdf(src), asText=isText(src);
     $('viewImg').hidden=asPdf||asText; $('viewPdf').hidden=!asPdf; $('viewText').hidden=!asText;
-    if(asText){ $('viewImg').removeAttribute('src'); $('viewText').textContent = d.content || readText(d.img); }
-    else if(asPdf) $('viewImg').removeAttribute('src'); else $('viewImg').src=d.img;
+    if(asText){ $('viewImg').removeAttribute('src');
+      $('viewText').textContent = (viewPage===0 && d.content) ? d.content : readText(src); }
+    else if(asPdf) $('viewImg').removeAttribute('src'); else $('viewImg').src=src;
+    const many=pages.length>1;
+    $('viewPager').hidden=!many;
+    if(many){ $('pgCount').textContent='Hoja '+(viewPage+1)+' de '+pages.length;
+      $('pgPrev').disabled=viewPage===0; $('pgNext').disabled=viewPage>=pages.length-1; }
+    // the content field belongs to the first sheet, where the document's own text lives
+    const firstIsText = isText(pages[0]);
+    $('dContentLabel').textContent = firstIsText ? 'Texto del documento' : 'Notas / contenido';
+    $('dContent').placeholder = firstIsText ? 'El texto que guardaste…' : 'Cualquier detalle que quieras recordar…';
+  }
+  function openViewer(id){
+    const d=docs.find(x=>x.id===id); if(!d) return; viewingId=id; viewPage=0;
+    renderPage();
     $('viewTitle').textContent=d.title; $('viewDate').textContent='Guardado el '+fmtDate(d.date);
     $('dDate').value=d.docDate||''; $('dSender').value=d.sender||''; $('dSubject').value=d.subject||''; $('dContent').value=d.content||'';
-    // On a text document this field IS the document, not a note about it — say so.
-    $('dContentLabel').textContent = asText ? 'Texto del documento' : 'Notas / contenido';
-    $('dContent').placeholder = asText ? 'El texto que guardaste…' : 'Cualquier detalle que quieras recordar…';
     viewerFinders=new Set(d.finders||[]); buildPills($('viewPills'), viewerFinders, null);
     openSheet('viewer');
   }
+  $('addPageBtn').onclick = ()=>{ addingTo=viewingId; closeSheet('viewer'); openSheet('archivar'); };
+  $('pgPrev').onclick = ()=>{ if(viewPage>0){ viewPage--; renderPage(); } };
+  $('pgNext').onclick = ()=>{ const d=docs.find(x=>x.id===viewingId);
+    if(d && viewPage < pagesOf(d).length-1){ viewPage++; renderPage(); } };
+  $('pgDel').onclick = ()=>{
+    const d=docs.find(x=>x.id===viewingId); if(!d) return;
+    const pages=pagesOf(d);
+    if(pages.length<=1){ showToast('Es la única hoja del documento'); return; }
+    if(!confirm('¿Quitar la hoja '+(viewPage+1)+' de '+pages.length+'?')) return;
+    d.pages = pages.filter((_,i)=>i!==viewPage);
+    d.img = d.pages[0];                       // the first sheet is still the face of the document
+    if(viewPage >= d.pages.length) viewPage = d.pages.length-1;
+    putDoc(d); refresh(); renderPage(); showToast('Hoja quitada');
+  };
   $('openPdfBtn').onclick = ()=>{
     const d=docs.find(x=>x.id===viewingId); if(!d||!isPdf(d.img)) return;
     const url=URL.createObjectURL(pdfBlob(d.img));
@@ -1053,7 +1131,7 @@
     if($('dDate').value) d.docDate=$('dDate').value;
     d.sender=$('dSender').value.trim(); d.subject=$('dSubject').value.trim(); d.content=$('dContent').value.trim();
     // On a text document that field is the document itself, so keep both copies in step
-    if(isText(d.img)) d.img = makeTextSrc(d.content);
+    if(isText(pagesOf(d)[0])){ const t=makeTextSrc(d.content); d.pages=pagesOf(d).slice(); d.pages[0]=t; d.img=t; }
     d.finders=Array.from(viewerFinders); putDoc(d); refresh(); closeSheet('viewer'); showToast('✓ Cambios guardados');
   };
   $('delBtn').onclick = ()=>{ if(!confirm('¿Eliminar este documento? No se puede deshacer.')) return;
@@ -1069,6 +1147,7 @@
      so what stays keeps its full detail instead of losing any. */
   let pendingRaw=null;          // untouched picture, kept only while naming
   let pendingText='';           // the text of a text document, while naming
+  let addingTo=null;            // id of the document this new sheet belongs to, if any
   let cropGeom=null;            // {x,y,w,h} of the frame, in stage pixels
   function fitStage(natW, natH){
     const sheet=$('cropStage').parentElement;
@@ -1265,18 +1344,27 @@
   /* ---- PDF (on-device) ---- */
   function imgDims(u){ return new Promise(r=>{ const i=new Image(); i.onload=()=>r({w:i.naturalWidth||600,h:i.naturalHeight||800}); i.onerror=()=>r({w:600,h:800}); i.src=u; }); }
   function safeName(t){ return (t||'documento').replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim().slice(0,60)+'.pdf'; }
-  function jpegToPdfBlob(u,w,h){
-    const bin=atob(u.split(',')[1]); const o={};
-    o[1]="<< /Type /Catalog /Pages 2 0 R >>"; o[2]="<< /Type /Pages /Kids [3 0 R] /Count 1 >>";
-    o[3]="<< /Type /Page /Parent 2 0 R /MediaBox [0 0 "+w+" "+h+"] /Resources << /XObject << /Im0 5 0 R >> >> /Contents 4 0 R >>";
-    const c="q "+w+" 0 0 "+h+" 0 0 cm /Im0 Do Q";
-    o[4]="<< /Length "+c.length+" >>\nstream\n"+c+"\nendstream";
-    o[5]="<< /Type /XObject /Subtype /Image /Width "+w+" /Height "+h+" /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length "+bin.length+" >>\nstream\n"+bin+"\nendstream";
+  // One sheet or many: a document with three sheets comes out as a three-page PDF.
+  function jpegToPdfBlob(pages){
+    if(!Array.isArray(pages)) pages=[pages];          // still accepts a single {u,w,h}
+    const N=pages.length, o={};
+    const kids=[]; for(let i=0;i<N;i++) kids.push((3+i*3)+" 0 R");
+    o[1]="<< /Type /Catalog /Pages 2 0 R >>";
+    o[2]="<< /Type /Pages /Kids ["+kids.join(' ')+"] /Count "+N+" >>";
+    pages.forEach((pg,i)=>{
+      const pageN=3+i*3, contN=4+i*3, imgN=5+i*3;
+      const bin=atob(pg.u.split(',')[1]);
+      o[pageN]="<< /Type /Page /Parent 2 0 R /MediaBox [0 0 "+pg.w+" "+pg.h+"] /Resources << /XObject << /Im0 "+imgN+" 0 R >> >> /Contents "+contN+" 0 R >>";
+      const c="q "+pg.w+" 0 0 "+pg.h+" 0 0 cm /Im0 Do Q";
+      o[contN]="<< /Length "+c.length+" >>\nstream\n"+c+"\nendstream";
+      o[imgN]="<< /Type /XObject /Subtype /Image /Width "+pg.w+" /Height "+pg.h+" /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length "+bin.length+" >>\nstream\n"+bin+"\nendstream";
+    });
+    const last=2+N*3;
     let pdf="%PDF-1.4\n"; const off={};
-    for(let i=1;i<=5;i++){ off[i]=pdf.length; pdf+=i+" 0 obj\n"+o[i]+"\nendobj\n"; }
-    const x=pdf.length; pdf+="xref\n0 6\n0000000000 65535 f \n";
-    for(let i=1;i<=5;i++) pdf+=String(off[i]).padStart(10,'0')+" 00000 n \n";
-    pdf+="trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n"+x+"\n%%EOF";
+    for(let i=1;i<=last;i++){ off[i]=pdf.length; pdf+=i+" 0 obj\n"+o[i]+"\nendobj\n"; }
+    const x=pdf.length; pdf+="xref\n0 "+(last+1)+"\n0000000000 65535 f \n";
+    for(let i=1;i<=last;i++) pdf+=String(off[i]).padStart(10,'0')+" 00000 n \n";
+    pdf+="trailer\n<< /Size "+(last+1)+" /Root 1 0 R >>\nstartxref\n"+x+"\n%%EOF";
     const b=new Uint8Array(pdf.length); for(let i=0;i<pdf.length;i++) b[i]=pdf.charCodeAt(i)&0xff;
     return new Blob([b],{type:'application/pdf'});
   }
@@ -1308,10 +1396,25 @@
   }
   async function exportPdf(d){
     showToast('Preparando PDF…'); const name=safeName(d.title);
+    const sheets=pagesOf(d);
     let blob;
-    if(isPdf(d.img)){ blob=pdfBlob(d.img); }              // already a PDF — send it as it came in
-    else if(isText(d.img)){ const j=textToJpeg(d.content||readText(d.img), d.title); blob=jpegToPdfBlob(j,1240,1754); }
-    else { const {w,h}=await imgDims(d.img); blob=jpegToPdfBlob(d.img,w,h); }
+    if(sheets.length===1 && isPdf(sheets[0])){ blob=pdfBlob(sheets[0]); }   // already a PDF — send it as it came in
+    else {
+      const built=[]; let skipped=0;
+      for(let i=0;i<sheets.length;i++){
+        const src=sheets[i];
+        if(isPdf(src)){ skipped++; continue; }              // a PDF sheet cannot be folded in
+        if(isText(src)){
+          const body=(i===0 && d.content) ? d.content : readText(src);
+          built.push({u:textToJpeg(body, i===0?d.title:''), w:1240, h:1754});
+        } else {
+          const {w,h}=await imgDims(src); built.push({u:src,w,h});
+        }
+      }
+      if(!built.length){ showToast('No pude armar el PDF'); return; }
+      if(skipped) showToast('Dejé fuera '+skipped+(skipped===1?' hoja que ya era PDF':' hojas que ya eran PDF'));
+      blob=jpegToPdfBlob(built);
+    }
     const file=new File([blob],name,{type:'application/pdf'});
     if(navigator.canShare && navigator.canShare({files:[file]})){ try{ await navigator.share({files:[file],title:d.title}); return; }catch(e){ if(e.name==='AbortError') return; } }
     const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name;
