@@ -182,7 +182,9 @@
   .pdf-face .nm{ font-size:14px;font-weight:650;word-break:break-word }
   .text-face{ width:100%;border-radius:14px;background:var(--sand);border:1px solid var(--line);
     padding:14px 16px;font-size:14.5px;line-height:1.55;color:var(--ink);white-space:pre-wrap;
-    word-break:break-word;max-height:38vh;overflow-y:auto;text-align:left; }
+    word-break:break-word;min-height:170px;max-height:38vh;overflow-y:auto;text-align:left;
+    font-family:inherit;display:block;resize:vertical; }
+  .text-face:focus{outline:none;border-color:var(--teal)}
   .thumb.is-text{ display:grid;place-items:center;font-size:26px;background:var(--sand-2);border-color:var(--line); }
   .pdf-face .op{ appearance:none;border:none;cursor:pointer;font-family:inherit;
     background:var(--on-fill);color:var(--fill);border-radius:100px;padding:9px 20px;font-size:14px;font-weight:700;margin-top:2px }
@@ -544,7 +546,8 @@
     <p class="sub">¿De dónde lo traemos?</p>
     <button class="btn btn-primary" id="wayCam" style="width:100%;margin-bottom:8px">📷 Tomar una foto</button>
     <button class="btn btn-ghost" id="wayFile" style="width:100%;margin-bottom:8px">🖼️ Desde el teléfono</button>
-    <button class="btn btn-ghost" id="wayPaste" style="width:100%;margin-bottom:12px">📋 Pegar</button>
+    <button class="btn btn-ghost" id="wayPaste" style="width:100%;margin-bottom:8px">📋 Pegar</button>
+    <button class="btn btn-ghost" id="wayWrite" style="width:100%;margin-bottom:12px">⌨️ Escribir</button>
     <button class="btn btn-ghost" id="wayCancel" style="width:100%">Cancelar</button>
   </div>
 </div>
@@ -574,7 +577,7 @@
     <img class="preview-img" id="previewImg" alt="Vista previa">
     <button class="btn btn-ghost" id="cropBtn" style="width:100%;margin:-8px 0 4px">Recortar</button>
     <div class="pdf-face" id="previewPdf" hidden><div class="ico">📄</div><div class="nm" id="previewPdfName">PDF</div></div>
-    <div class="text-face" id="previewText" hidden></div>
+    <textarea class="text-face" id="previewText" hidden placeholder="Escribe aquí…"></textarea>
     <div id="namingFields">
       <label class="fld">Finders (elige los que quieras)</label>
       <div class="pillrow" id="namePills"></div>
@@ -612,7 +615,7 @@
   <div class="sheet">
     <img id="viewImg" alt="">
     <div class="pdf-face" id="viewPdf" hidden><div class="ico">📄</div><div class="nm">Documento PDF</div><button class="op" id="openPdfBtn" type="button">Abrir el PDF</button></div>
-    <div class="text-face" id="viewText" hidden></div>
+    <textarea class="text-face" id="viewText" hidden placeholder="Escribe aquí…"></textarea>
     <div class="pager" id="viewPager" hidden>
       <button type="button" class="pg" id="pgPrev" aria-label="Hoja anterior">‹</button>
       <span class="pg-n" id="pgCount"></span>
@@ -891,6 +894,8 @@
   $('wayCam').onclick   = ()=>{ closeSheet('archivar'); $('fileInput').click(); };
   $('wayFile').onclick  = ()=>{ closeSheet('archivar'); $('pickInput').click(); };
   $('wayPaste').onclick = ()=>{ closeSheet('archivar'); pasteIn(); };
+  $('wayWrite').onclick = async ()=>{ closeSheet('archivar'); lastSource='pickInput';
+    await openNamingFor(null, ''); setTimeout(()=>$('previewText').focus(), 320); };
   $('wayCancel').onclick= ()=>{ closeSheet('archivar'); if(addingTo){ const id=addingTo; addingTo=null; openViewer(id); } };
   $('archBackupBtn').onclick=exportBackup;
   function doUnlock(){
@@ -999,9 +1004,9 @@
     $('previewImg').hidden = asPdf || asText; $('previewPdf').hidden = !asPdf;
     $('previewText').hidden = !asText;
     $('cropBtn').hidden = asPdf || asText;
-    if(asText) $('previewText').textContent = textBody;
+    if(asText) $('previewText').value = textBody;
     else if(asPdf) $('previewPdfName').textContent = file.name || 'PDF'; else $('previewImg').src=pendingImg;
-    $('titleInput').value = asText ? suggestFromText(textBody)
+    $('titleInput').value = asText ? (textBody ? suggestFromText(textBody) : '')
       : (asPdf ? (file.name||'').replace(/\.pdf$/i,'') || suggestName() : suggestName());
     buildPills($('namePills'), pendingFinders, null);
     const adding = !!addingTo;
@@ -1054,12 +1059,20 @@
   }
   $('pasteBtn').onclick = pasteIn;
   $('saveBtn').onclick = ()=>{
+    // if this is a text sheet, whatever is in the box is the document
+    if(!$('previewText').hidden){
+      pendingText = $('previewText').value.trim();
+      if(!pendingText){ showToast('Escribe algo primero'); $('previewText').focus(); return; }
+      pendingImg = makeTextSrc(pendingText);
+      if(!addingTo && !($('titleInput').value||'').trim()) $('titleInput').value = suggestFromText(pendingText);
+    }
     if(addingTo){
       const d=docs.find(x=>x.id===addingTo);
       if(d){
         d.pages = pagesOf(d).concat([pendingImg]);
         putDoc(d); refresh();
         closeSheet('naming');
+        viewingId = d.id;                    // the viewer follows the document we just added to
         addingTo=null; pendingImg=null; pendingRaw=null; pendingText='';
         viewPage = pagesOf(d).length-1; renderPage(); openSheet('viewer');
         showToast('✓ Hoja agregada');
@@ -1087,7 +1100,7 @@
     const asPdf=isPdf(src), asText=isText(src);
     $('viewImg').hidden=asPdf||asText; $('viewPdf').hidden=!asPdf; $('viewText').hidden=!asText;
     if(asText){ $('viewImg').removeAttribute('src');
-      $('viewText').textContent = (viewPage===0 && d.content) ? d.content : readText(src); }
+      $('viewText').value = (viewPage===0 && d.content) ? d.content : readText(src); }
     else if(asPdf) $('viewImg').removeAttribute('src'); else $('viewImg').src=src;
     const many=pages.length>1;
     $('viewPager').hidden=!many;
@@ -1131,7 +1144,12 @@
     if($('dDate').value) d.docDate=$('dDate').value;
     d.sender=$('dSender').value.trim(); d.subject=$('dSubject').value.trim(); d.content=$('dContent').value.trim();
     // On a text document that field is the document itself, so keep both copies in step
-    if(isText(pagesOf(d)[0])){ const t=makeTextSrc(d.content); d.pages=pagesOf(d).slice(); d.pages[0]=t; d.img=t; }
+    // a text sheet is edited where you read it, so save that sheet — any sheet, not just the first
+    if(!$('viewText').hidden){
+      const t=$('viewText').value.trim();
+      d.pages=pagesOf(d).slice(); d.pages[viewPage]=makeTextSrc(t);
+      if(viewPage===0){ d.content=t; d.img=d.pages[0]; $('dContent').value=t; }
+    } else if(isText(pagesOf(d)[0])){ const t=makeTextSrc(d.content); d.pages=pagesOf(d).slice(); d.pages[0]=t; d.img=t; }
     d.finders=Array.from(viewerFinders); putDoc(d); refresh(); closeSheet('viewer'); showToast('✓ Cambios guardados');
   };
   $('delBtn').onclick = ()=>{ if(!confirm('¿Eliminar este documento? No se puede deshacer.')) return;

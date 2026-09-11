@@ -1,5 +1,5 @@
 /* CEO — Collige et Ordina — offline service worker */
-const CACHE = 'carelena-v21';
+const CACHE = 'carelena-v22';
 const ASSETS = ['./', './index.html', './manifest.json', './icon-180.png', './icon-512.png', './watermark.jpg?v=2', './watermark-archivo.jpg?v=1'];
 
 self.addEventListener('install', e => {
