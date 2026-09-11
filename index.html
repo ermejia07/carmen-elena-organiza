@@ -614,7 +614,7 @@
       <input type="text" id="dSender" placeholder="Ej: CFE, Dr. Ruiz, Banco…" autocomplete="off">
       <label class="fld">¿De qué trata? (asunto)</label>
       <input type="text" id="dSubject" placeholder="Ej: Recibo de luz de agosto" autocomplete="off">
-      <label class="fld">Notas / contenido</label>
+      <label class="fld" id="dContentLabel">Notas / contenido</label>
       <textarea id="dContent" placeholder="Cualquier detalle que quieras recordar…"></textarea>
     </div>
     <div class="btn-row">
@@ -1036,6 +1036,9 @@
     else if(asPdf) $('viewImg').removeAttribute('src'); else $('viewImg').src=d.img;
     $('viewTitle').textContent=d.title; $('viewDate').textContent='Guardado el '+fmtDate(d.date);
     $('dDate').value=d.docDate||''; $('dSender').value=d.sender||''; $('dSubject').value=d.subject||''; $('dContent').value=d.content||'';
+    // On a text document this field IS the document, not a note about it — say so.
+    $('dContentLabel').textContent = asText ? 'Texto del documento' : 'Notas / contenido';
+    $('dContent').placeholder = asText ? 'El texto que guardaste…' : 'Cualquier detalle que quieras recordar…';
     viewerFinders=new Set(d.finders||[]); buildPills($('viewPills'), viewerFinders, null);
     openSheet('viewer');
   }
@@ -1049,6 +1052,8 @@
     const d=docs.find(x=>x.id===viewingId); if(!d) return;
     if($('dDate').value) d.docDate=$('dDate').value;
     d.sender=$('dSender').value.trim(); d.subject=$('dSubject').value.trim(); d.content=$('dContent').value.trim();
+    // On a text document that field is the document itself, so keep both copies in step
+    if(isText(d.img)) d.img = makeTextSrc(d.content);
     d.finders=Array.from(viewerFinders); putDoc(d); refresh(); closeSheet('viewer'); showToast('✓ Cambios guardados');
   };
   $('delBtn').onclick = ()=>{ if(!confirm('¿Eliminar este documento? No se puede deshacer.')) return;
