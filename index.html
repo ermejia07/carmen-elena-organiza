@@ -701,10 +701,14 @@
   const $ = id => document.getElementById(id);
   // The ten everybody starts with. Nobody loses these — they are only the
   // starting point, and from here on each person shapes the row themselves.
+  // Two kinds, in this order: first WHAT a document is, then WHAT IT IS ABOUT.
+  // Crossing the two is where the precision comes from — Pagos + Hogar is the
+  // light bill, Pagos + Propiedades is what you paid on the land.
   const DEFAULT_FINDERS = [
-    {key:'Bancos', emoji:'🏦'}, {key:'Propiedades', emoji:'🏡'}, {key:'Contratos', emoji:'✍️'},
-    {key:'Hermanos', emoji:'👪'}, {key:'Pagos', emoji:'💳'}, {key:'Año', emoji:'📅'},
-    {key:'Médico', emoji:'🩺'}, {key:'Hogar', emoji:'🏠'}, {key:'ID', emoji:'🪪'}, {key:'Otro', emoji:'📌'}
+    {key:'Bancos', emoji:'🏦'}, {key:'Pagos', emoji:'💳'}, {key:'Contratos', emoji:'✍️'},
+    {key:'Médico', emoji:'🩺'}, {key:'ID', emoji:'🪪'},
+    {key:'Hogar', emoji:'🏠'}, {key:'Propiedades', emoji:'🏡'},
+    {key:'Otro', emoji:'📌'}
   ];
   let FINDERS = DEFAULT_FINDERS.slice();
   let FMAP = Object.fromEntries(FINDERS.map(f=>[f.key,f]));
