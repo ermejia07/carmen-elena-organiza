@@ -170,6 +170,10 @@
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--on-fill);padding:18px 14px;text-align:center; }
   .pdf-face .ico{ font-size:40px;line-height:1 }
   .pdf-face .nm{ font-size:14px;font-weight:650;word-break:break-word }
+  .text-face{ width:100%;border-radius:14px;background:var(--sand);border:1px solid var(--line);
+    padding:14px 16px;font-size:14.5px;line-height:1.55;color:var(--ink);white-space:pre-wrap;
+    word-break:break-word;max-height:38vh;overflow-y:auto;text-align:left; }
+  .thumb.is-text{ display:grid;place-items:center;font-size:26px;background:var(--sand-2);border-color:var(--line); }
   .pdf-face .op{ appearance:none;border:none;cursor:pointer;font-family:inherit;
     background:var(--on-fill);color:var(--fill);border-radius:100px;padding:9px 20px;font-size:14px;font-weight:700;margin-top:2px }
   .card-body{flex:1;min-width:0}
@@ -560,6 +564,7 @@
     <img class="preview-img" id="previewImg" alt="Vista previa">
     <button class="btn btn-ghost" id="cropBtn" style="width:100%;margin:-8px 0 4px">Recortar</button>
     <div class="pdf-face" id="previewPdf" hidden><div class="ico">📄</div><div class="nm" id="previewPdfName">PDF</div></div>
+    <div class="text-face" id="previewText" hidden></div>
     <label class="fld">Finders (elige los que quieras)</label>
     <div class="pillrow" id="namePills"></div>
     <label class="fld" for="titleInput">Nombre del documento</label>
@@ -595,6 +600,7 @@
   <div class="sheet">
     <img id="viewImg" alt="">
     <div class="pdf-face" id="viewPdf" hidden><div class="ico">📄</div><div class="nm">Documento PDF</div><button class="op" id="openPdfBtn" type="button">Abrir el PDF</button></div>
+    <div class="text-face" id="viewText" hidden></div>
     <div class="view-meta">
       <div class="t" id="viewTitle"></div>
       <div class="d" id="viewDate"></div>
@@ -777,7 +783,9 @@
   function cardEl(d){
     const card=document.createElement('div'); card.className='card';
     const finders=(d.finders||[]).slice(0,4).map(k=>'<span class="mini">'+fLabel(k)+'</span>').join('');
-    const face = isPdf(d.img) ? '<div class="thumb is-pdf">📄</div>' : '<img class="thumb" src="'+d.img+'" alt="">';
+    const face = isPdf(d.img) ? '<div class="thumb is-pdf">📄</div>'
+               : isText(d.img) ? '<div class="thumb is-text">📝</div>'
+               : '<img class="thumb" src="'+d.img+'" alt="">';
     card.innerHTML=face+
       '<div class="card-body"><div class="card-title"></div><div class="card-date"></div>'+
       '<div class="card-finders">'+finders+'</div></div>'+
@@ -921,6 +929,12 @@
 
   /* ---- Capture ---- */
   function isPdf(src){ return typeof src==='string' && src.slice(0,20).indexOf('application/pdf')>-1; }
+  // A page of text is a document too: same name, same finders, same date — it just
+  // has no photo. Stored as a data URL like the rest, and copied into `content`
+  // so the search box can actually find what it says.
+  function isText(src){ return typeof src==='string' && src.slice(0,20).indexOf('text/plain')>-1; }
+  function readText(src){ try{ return decodeURIComponent(escape(atob(src.split(',')[1]||''))); }catch(e){ return ''; } }
+  function makeTextSrc(t){ return 'data:text/plain;base64,'+btoa(unescape(encodeURIComponent(t))); }
   function readAsDataUrl(file){ return new Promise(res=>{ const r=new FileReader(); r.onload=e=>res(e.target.result); r.readAsDataURL(file); }); }
   function pdfBlob(src){ const b64=src.slice(src.indexOf(',')+1); const bin=atob(b64);
     const u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i);
@@ -935,23 +949,33 @@
         img.src=e.target.result; };
       reader.readAsDataURL(file); });
   }
+  // The first line usually says what it is — use it, so he does not have to type a name.
+  function suggestFromText(t){
+    const first=(t||'').split('\n').map(x=>x.trim()).find(x=>x) || '';
+    return first ? first.slice(0,60) : suggestName();
+  }
   function suggestName(){ const d=new Date(); const m=d.toLocaleDateString('es-ES',{month:'long'}); return 'Documento — '+m.charAt(0).toUpperCase()+m.slice(1); }
   $('scanInArchiveBtn').onclick = ()=> $('fileInput').click();
   $('pickInArchiveBtn').onclick = ()=> $('pickInput').click();
   // Same naming sheet whether the picture came from the camera or from the phone.
   let lastSource='fileInput';   // which door the picture came through
-  async function openNamingFor(file){
-    const asPdf = file.type==='application/pdf';
+  async function openNamingFor(file, textBody){
+    const asText = typeof textBody === 'string';
+    const asPdf = !asText && file.type==='application/pdf';
     if(asPdf && file.size > 12*1024*1024){ showToast('Ese PDF es muy grande'); return; }
-    pendingImg = asPdf ? await readAsDataUrl(file) : await processImage(file);
+    pendingImg = asText ? makeTextSrc(textBody) : (asPdf ? await readAsDataUrl(file) : await processImage(file));
     // keep the untouched picture around: a crop must be cut from the original,
     // otherwise you would be cropping an already-shrunk copy and losing detail
-    pendingRaw = asPdf ? null : await readAsDataUrl(file);
+    pendingRaw = (asPdf||asText) ? null : await readAsDataUrl(file);
+    pendingText = asText ? textBody : '';
     pendingFinders=new Set();
-    $('previewImg').hidden = asPdf; $('previewPdf').hidden = !asPdf;
-    $('cropBtn').hidden = asPdf;
-    if(asPdf) $('previewPdfName').textContent = file.name || 'PDF'; else $('previewImg').src=pendingImg;
-    $('titleInput').value = asPdf ? (file.name||'').replace(/\.pdf$/i,'') || suggestName() : suggestName();
+    $('previewImg').hidden = asPdf || asText; $('previewPdf').hidden = !asPdf;
+    $('previewText').hidden = !asText;
+    $('cropBtn').hidden = asPdf || asText;
+    if(asText) $('previewText').textContent = textBody;
+    else if(asPdf) $('previewPdfName').textContent = file.name || 'PDF'; else $('previewImg').src=pendingImg;
+    $('titleInput').value = asText ? suggestFromText(textBody)
+      : (asPdf ? (file.name||'').replace(/\.pdf$/i,'') || suggestName() : suggestName());
     buildPills($('namePills'), pendingFinders, null);
     openSheet('naming'); setTimeout(()=>{ $('titleInput').focus(); $('titleInput').select(); },300);
   }
@@ -981,23 +1005,35 @@
       await openNamingFor(new File([blob], (type==='application/pdf'?'Documento':'Imagen')+ext, {type}));
       return;
     }
-    showToast('No hay un documento copiado');
+    // no picture and no PDF — maybe it is text, which is a document all the same
+    for(const it of items){
+      if(!(it.types||[]).includes('text/plain')) continue;
+      let t='';
+      try{ t=(await (await it.getType('text/plain')).text()).trim(); }catch(e){ continue; }
+      if(!t) continue;
+      lastSource='pickInput';
+      await openNamingFor(null, t);
+      return;
+    }
+    showToast('No hay nada copiado que pueda guardar');
   }
   $('pasteBtn').onclick = pasteIn;
   $('saveBtn').onclick = ()=>{
     const title=($('titleInput').value||'').trim()||suggestName();
     const d={ id:'d'+Date.now(), title, date:Date.now(), docDate:new Date().toISOString().slice(0,10),
-      sender:'', subject:'', content:'', finders:Array.from(pendingFinders), img:pendingImg };
-    docs.push(d); putDoc(d); refresh(); closeSheet('naming'); pendingImg=null; pendingRaw=null; showToast('✓ Documento guardado'); updateArchReminder();
+      sender:'', subject:'', content:pendingText||'', finders:Array.from(pendingFinders), img:pendingImg };
+    docs.push(d); putDoc(d); refresh(); closeSheet('naming'); pendingImg=null; pendingRaw=null; pendingText='';
+    showToast('✓ Documento guardado'); updateArchReminder();
   };
   $('retakeBtn').onclick = ()=>{ closeSheet('naming'); pendingImg=null; pendingRaw=null; $(lastSource).click(); };
 
   /* ---- Viewer ---- */
   function openViewer(id){
     const d=docs.find(x=>x.id===id); if(!d) return; viewingId=id;
-    const asPdf=isPdf(d.img);
-    $('viewImg').hidden=asPdf; $('viewPdf').hidden=!asPdf;
-    if(asPdf) $('viewImg').removeAttribute('src'); else $('viewImg').src=d.img;
+    const asPdf=isPdf(d.img), asText=isText(d.img);
+    $('viewImg').hidden=asPdf||asText; $('viewPdf').hidden=!asPdf; $('viewText').hidden=!asText;
+    if(asText){ $('viewImg').removeAttribute('src'); $('viewText').textContent = d.content || readText(d.img); }
+    else if(asPdf) $('viewImg').removeAttribute('src'); else $('viewImg').src=d.img;
     $('viewTitle').textContent=d.title; $('viewDate').textContent='Guardado el '+fmtDate(d.date);
     $('dDate').value=d.docDate||''; $('dSender').value=d.sender||''; $('dSubject').value=d.subject||''; $('dContent').value=d.content||'';
     viewerFinders=new Set(d.finders||[]); buildPills($('viewPills'), viewerFinders, null);
@@ -1027,6 +1063,7 @@
      The crop is taken from the ORIGINAL picture, never from the shrunk preview,
      so what stays keeps its full detail instead of losing any. */
   let pendingRaw=null;          // untouched picture, kept only while naming
+  let pendingText='';           // the text of a text document, while naming
   let cropGeom=null;            // {x,y,w,h} of the frame, in stage pixels
   function fitStage(natW, natH){
     const sheet=$('cropStage').parentElement;
@@ -1238,10 +1275,37 @@
     const b=new Uint8Array(pdf.length); for(let i=0;i<pdf.length;i++) b[i]=pdf.charCodeAt(i)&0xff;
     return new Blob([b],{type:'application/pdf'});
   }
+  // A text document becomes what it always was on paper: a white page with writing.
+  function textToJpeg(text, title){
+    const W=1240, H=1754, PAD=90;               // A4 at ~150dpi
+    const c=document.createElement('canvas'); c.width=W; c.height=H;
+    const x=c.getContext('2d');
+    x.fillStyle='#ffffff'; x.fillRect(0,0,W,H);
+    x.fillStyle='#111111';
+    let y=PAD+34;
+    if(title){ x.font='bold 40px Georgia, serif'; x.fillText(title.slice(0,46), PAD, y); y+=54; }
+    x.strokeStyle='#cccccc'; x.beginPath(); x.moveTo(PAD,y); x.lineTo(W-PAD,y); x.stroke(); y+=46;
+    x.font='30px -apple-system, Helvetica, Arial, sans-serif';
+    const maxW=W-PAD*2;
+    for(const para of String(text).split('\n')){
+      if(!para.trim()){ y+=22; continue; }
+      let line='';
+      for(const word of para.split(/\s+/)){
+        const test = line ? line+' '+word : word;
+        if(x.measureText(test).width > maxW && line){ x.fillText(line, PAD, y); y+=42; line=word; }
+        else line=test;
+        if(y > H-PAD) break;
+      }
+      if(line && y <= H-PAD){ x.fillText(line, PAD, y); y+=42; }
+      if(y > H-PAD) break;
+    }
+    return c.toDataURL('image/jpeg',0.9);
+  }
   async function exportPdf(d){
     showToast('Preparando PDF…'); const name=safeName(d.title);
     let blob;
     if(isPdf(d.img)){ blob=pdfBlob(d.img); }              // already a PDF — send it as it came in
+    else if(isText(d.img)){ const j=textToJpeg(d.content||readText(d.img), d.title); blob=jpegToPdfBlob(j,1240,1754); }
     else { const {w,h}=await imgDims(d.img); blob=jpegToPdfBlob(d.img,w,h); }
     const file=new File([blob],name,{type:'application/pdf'});
     if(navigator.canShare && navigator.canShare({files:[file]})){ try{ await navigator.share({files:[file],title:d.title}); return; }catch(e){ if(e.name==='AbortError') return; } }
