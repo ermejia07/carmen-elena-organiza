@@ -124,6 +124,40 @@
     padding:9px 15px;border-radius:100px;font-size:14px;font-weight:600;font-family:inherit;
     transition:background .12s ease,color .12s,border-color .12s; }
   .chip.active{background:var(--fill);border-color:var(--on-fill);color:var(--on-fill)}
+  .chip.add{border-style:dashed;color:var(--teal);font-size:17px;padding:8px 17px;line-height:1.15}
+
+  /* ---- Recortar ---- */
+  .crop-stage{ position:relative;width:100%;margin-bottom:14px;border-radius:14px;overflow:hidden;
+    background:var(--sand-2);border:1px solid var(--line);touch-action:none;user-select:none; }
+  .crop-stage img{display:block;width:100%;max-height:56vh;object-fit:contain}
+  .crop-shade{position:absolute;inset:0;pointer-events:none;box-shadow:0 0 0 9999px rgba(20,17,14,.5)}
+  .crop-box{position:absolute;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.4);cursor:move}
+  .crop-box i{ position:absolute;width:30px;height:30px;display:block; }
+  .crop-box i::after{ content:'';position:absolute;width:16px;height:16px;border:3px solid #fff;
+    border-radius:2px;box-shadow:0 0 3px rgba(0,0,0,.5); }
+  .crop-box i[data-c=nw]{top:-15px;left:-15px}    .crop-box i[data-c=nw]::after{top:8px;left:8px;border-right:none;border-bottom:none}
+  .crop-box i[data-c=ne]{top:-15px;right:-15px}   .crop-box i[data-c=ne]::after{top:8px;right:8px;border-left:none;border-bottom:none}
+  .crop-box i[data-c=sw]{bottom:-15px;left:-15px} .crop-box i[data-c=sw]::after{bottom:8px;left:8px;border-right:none;border-top:none}
+  .crop-box i[data-c=se]{bottom:-15px;right:-15px}.crop-box i[data-c=se]::after{bottom:8px;right:8px;border-left:none;border-top:none}
+
+  /* ---- Mis finders ---- */
+  .emoji-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:7px;margin:2px 0 6px}
+  .emoji-grid button{ appearance:none;cursor:pointer;font-size:21px;line-height:1;padding:9px 0;
+    border:1.5px solid var(--line);background:var(--sand-2);border-radius:12px;font-family:inherit; }
+  .emoji-grid button.active{background:var(--fill);border-color:var(--on-fill)}
+  .mine{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+  .mine .row{ display:flex;align-items:center;gap:10px; background:var(--sand-2);
+    border:1px solid var(--line);border-radius:13px;padding:10px 12px; }
+  .mine .row .nm{ flex:1;font-size:15px;font-weight:600;text-align:left;
+    appearance:none;border:none;background:transparent;cursor:pointer;
+    color:var(--ink);font-family:inherit;padding:0; }
+  .mine .row .rename{ flex:1;font-size:15px;font-weight:600;padding:8px 10px;border-radius:9px;
+    border:1.5px solid var(--teal);background:var(--sand);color:var(--ink);font-family:inherit;width:100% }
+  .mine .row .rename:focus{outline:none}
+  .mine .row .rm{ appearance:none;border:none;background:transparent;cursor:pointer;
+    color:var(--danger);font-size:20px;line-height:1;padding:4px 8px;font-family:inherit; }
+  .mine .row .rm.ok{color:var(--teal)}
+  .mine .used{font-size:12px;color:var(--ink-soft);font-weight:400;display:block}
 
   .list{display:flex;flex-direction:column;gap:12px;margin-top:4px}
   .card{ display:flex;align-items:center;gap:14px; background:var(--sand-2);border:1px solid var(--line);
@@ -501,11 +535,30 @@
   </div>
 </div>
 
+<!-- Mis finders -->
+<div class="overlay" id="misFinders">
+  <div class="sheet">
+    <h2>Mis finders</h2>
+    <p class="sub">Los tuyos, con tus nombres</p>
+    <label class="fld">Elige un símbolo</label>
+    <div class="emoji-grid" id="emojiGrid"></div>
+    <label class="fld" for="finderName">¿Cómo se llama?</label>
+    <input type="text" id="finderName" placeholder="Ej: Reclamo BAC" autocomplete="off" maxlength="16">
+    <button class="btn btn-primary" id="finderCreate" style="width:100%;margin-top:12px">Crear</button>
+    <label class="fld" style="margin-top:18px">Los que ya tienes — tócalo para cambiarle el nombre</label>
+    <div class="mine" id="mineList"></div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="finderDone" style="width:100%">Listo</button>
+    </div>
+  </div>
+</div>
+
 <div class="overlay" id="naming">
   <div class="sheet">
     <h2>¿Se ve bien?</h2>
     <p class="sub">Aprueba, ponle nombre y elige sus finders</p>
     <img class="preview-img" id="previewImg" alt="Vista previa">
+    <button class="btn btn-ghost" id="cropBtn" style="width:100%;margin:-8px 0 4px">Recortar</button>
     <div class="pdf-face" id="previewPdf" hidden><div class="ico">📄</div><div class="nm" id="previewPdfName">PDF</div></div>
     <label class="fld">Finders (elige los que quieras)</label>
     <div class="pillrow" id="namePills"></div>
@@ -514,6 +567,25 @@
     <div class="btn-row">
       <button class="btn btn-ghost" id="retakeBtn">Volver a tomar</button>
       <button class="btn btn-primary" id="saveBtn">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Recortar -->
+<div class="overlay" id="cropper">
+  <div class="sheet">
+    <h2>Recorta el documento</h2>
+    <p class="sub">Arrastra las esquinas hasta dejar solo el papel</p>
+    <div class="crop-stage" id="cropStage">
+      <img id="cropImg" alt="">
+      <div class="crop-shade" id="cropShade"></div>
+      <div class="crop-box" id="cropBox">
+        <i data-c="nw"></i><i data-c="ne"></i><i data-c="sw"></i><i data-c="se"></i>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="cropCancel">Cancelar</button>
+      <button class="btn btn-primary" id="cropDone">Listo</button>
     </div>
   </div>
 </div>
@@ -599,15 +671,26 @@
 <script>
   const KEY="ceo_docs_v1", PIN_KEY="ceo_pin", BIO_KEY="ceo_bioId";
   const $ = id => document.getElementById(id);
-  const FINDERS = [
+  // The ten everybody starts with. Nobody loses these — they are only the
+  // starting point, and from here on each person shapes the row themselves.
+  const DEFAULT_FINDERS = [
     {key:'Bancos', emoji:'🏦'}, {key:'Propiedades', emoji:'🏡'}, {key:'Contratos', emoji:'✍️'},
     {key:'Hermanos', emoji:'👪'}, {key:'Pagos', emoji:'💳'}, {key:'Año', emoji:'📅'},
     {key:'Médico', emoji:'🩺'}, {key:'Hogar', emoji:'🏠'}, {key:'ID', emoji:'🪪'}, {key:'Otro', emoji:'📌'}
   ];
-  const FMAP = Object.fromEntries(FINDERS.map(f=>[f.key,f]));
+  let FINDERS = DEFAULT_FINDERS.slice();
+  let FMAP = Object.fromEntries(FINDERS.map(f=>[f.key,f]));
   const RENAMED = {Fincas:'Propiedades'};   // old finder names -> new ones
   const fixFinders = list => (list||[]).map(k => RENAMED[k] || k);
+  // A finder that was removed still labels its documents, just without the symbol.
   const fLabel = k => (FMAP[k] ? FMAP[k].emoji+' '+k : k);
+  function setFinders(list){
+    FINDERS = list;
+    FMAP = Object.fromEntries(FINDERS.map(f=>[f.key,f]));
+    idbSet('finders', FINDERS.map(f=>({key:f.key, emoji:f.emoji})));
+    try{ localStorage.setItem('ceo_finders', JSON.stringify(FINDERS)); }catch(e){}
+    rebuildPills();
+  }
 
   let docs = [];
   let pinHashVal = null, bioIdVal = null;
@@ -633,6 +716,12 @@
   async function initStore(){
     DB = await idbOpen();
     if(navigator.storage && navigator.storage.persist){ try{ await navigator.storage.persist(); }catch(e){} }
+    let savedF = await idbGet('finders');
+    if(savedF==null){ try{ const ls=localStorage.getItem('ceo_finders'); if(ls) savedF=JSON.parse(ls); }catch(e){} }
+    if(Array.isArray(savedF) && savedF.length){
+      FINDERS = savedF.filter(f=>f && f.key);
+      FMAP = Object.fromEntries(FINDERS.map(f=>[f.key,f]));
+    }
     let arr = await getAllDocs();
     if(!arr.length){ // one-time migration from older single-array storage
       let old = await idbGet('docs');
@@ -653,7 +742,11 @@
   function fmtDate(ts){ try{ return new Date(ts).toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'}); }catch(e){ return ''; } }
 
   /* ---- Endless one-line pill row ---- */
+  // Every live row is remembered so a new finder shows up the moment it is made,
+  // without closing whatever screen you were on.
+  const livePills = [];
   function buildPills(container, selected, onchange){
+    if(!livePills.some(p=>p.container===container)) livePills.push({container, selected, onchange});
     const track=document.createElement('div'); track.className='pill-track';
     function pill(f){
       const b=document.createElement('button'); b.type='button'; b.className='chip'; b.dataset.finder=f.key;
@@ -663,13 +756,21 @@
         if(onchange) onchange(); };
       return b;
     }
-    const one=()=>FINDERS.forEach(f=>track.appendChild(pill(f)));
+    function addPill(){
+      const b=document.createElement('button'); b.type='button'; b.className='chip add';
+      b.textContent='＋'; b.setAttribute('aria-label','Crear un finder');
+      b.onclick=openMisFinders; return b;
+    }
+    const one=()=>{ FINDERS.forEach(f=>track.appendChild(pill(f))); track.appendChild(addPill()); };
     one(); one(); one();
     container.innerHTML=''; container.appendChild(track);
     requestAnimationFrame(()=>{ container.scrollLeft = track.scrollWidth/3; });
     container.onscroll=()=>{ const w=track.scrollWidth/3; if(w<=0) return;
       if(container.scrollLeft < w*0.5) container.scrollLeft += w;
       else if(container.scrollLeft > w*1.5) container.scrollLeft -= w; };
+  }
+  function rebuildPills(){
+    livePills.forEach(p=>{ if(document.body.contains(p.container)) buildPills(p.container, p.selected, p.onchange); });
   }
 
   /* ---- Cards / archive list ---- */
@@ -843,8 +944,12 @@
     const asPdf = file.type==='application/pdf';
     if(asPdf && file.size > 12*1024*1024){ showToast('Ese PDF es muy grande'); return; }
     pendingImg = asPdf ? await readAsDataUrl(file) : await processImage(file);
+    // keep the untouched picture around: a crop must be cut from the original,
+    // otherwise you would be cropping an already-shrunk copy and losing detail
+    pendingRaw = asPdf ? null : await readAsDataUrl(file);
     pendingFinders=new Set();
     $('previewImg').hidden = asPdf; $('previewPdf').hidden = !asPdf;
+    $('cropBtn').hidden = asPdf;
     if(asPdf) $('previewPdfName').textContent = file.name || 'PDF'; else $('previewImg').src=pendingImg;
     $('titleInput').value = asPdf ? (file.name||'').replace(/\.pdf$/i,'') || suggestName() : suggestName();
     buildPills($('namePills'), pendingFinders, null);
@@ -883,9 +988,9 @@
     const title=($('titleInput').value||'').trim()||suggestName();
     const d={ id:'d'+Date.now(), title, date:Date.now(), docDate:new Date().toISOString().slice(0,10),
       sender:'', subject:'', content:'', finders:Array.from(pendingFinders), img:pendingImg };
-    docs.push(d); putDoc(d); refresh(); closeSheet('naming'); pendingImg=null; showToast('✓ Documento guardado'); updateArchReminder();
+    docs.push(d); putDoc(d); refresh(); closeSheet('naming'); pendingImg=null; pendingRaw=null; showToast('✓ Documento guardado'); updateArchReminder();
   };
-  $('retakeBtn').onclick = ()=>{ closeSheet('naming'); pendingImg=null; $(lastSource).click(); };
+  $('retakeBtn').onclick = ()=>{ closeSheet('naming'); pendingImg=null; pendingRaw=null; $(lastSource).click(); };
 
   /* ---- Viewer ---- */
   function openViewer(id){
@@ -917,6 +1022,200 @@
 
   function openSheet(id){ $(id).classList.add('show'); }
   function closeSheet(id){ $(id).classList.remove('show'); }
+
+  /* ---- Recortar: quita mesa, mano y piso, y sube el detalle del papel ----
+     The crop is taken from the ORIGINAL picture, never from the shrunk preview,
+     so what stays keeps its full detail instead of losing any. */
+  let pendingRaw=null;          // untouched picture, kept only while naming
+  let cropGeom=null;            // {x,y,w,h} of the frame, in stage pixels
+  function fitStage(natW, natH){
+    const sheet=$('cropStage').parentElement;
+    const availW = Math.max(200, sheet.clientWidth - 40);
+    const availH = Math.max(200, Math.round(window.innerHeight*0.56));
+    const s = Math.min(availW/natW, availH/natH, 1);
+    return {w: Math.max(120, Math.round(natW*s)), h: Math.max(120, Math.round(natH*s))};
+  }
+  function openCropper(){
+    if(!pendingRaw) return;
+    const img=new Image();
+    img.onload=()=>{
+      $('cropImg').src=pendingRaw;
+      // the sheet must be on screen before anything is measured, otherwise it has
+      // no width yet and the frame comes out wrong
+      openSheet('cropper');
+      // reading clientWidth forces the layout, so the sheet already has its real
+      // size here — no need to wait a frame
+      const box=fitStage(img.naturalWidth, img.naturalHeight);
+      const stage=$('cropStage');
+      stage.style.width=box.w+'px'; stage.style.height=box.h+'px'; stage.style.margin='0 auto 14px';
+      // start at 90% so the corners sit inside the picture and look draggable
+      const m=Math.max(6, Math.round(Math.min(box.w,box.h)*0.05));
+      cropGeom={x:m, y:m, w:box.w-m*2, h:box.h-m*2};
+      drawCrop();
+    };
+    img.src=pendingRaw;
+  }
+  function drawCrop(){
+    const b=$('cropBox');
+    b.style.left=cropGeom.x+'px'; b.style.top=cropGeom.y+'px';
+    b.style.width=cropGeom.w+'px'; b.style.height=cropGeom.h+'px';
+    $('cropShade').style.clipPath =
+      'polygon(0 0,100% 0,100% 100%,0 100%,0 0,'+
+      cropGeom.x+'px '+cropGeom.y+'px,'+
+      cropGeom.x+'px '+(cropGeom.y+cropGeom.h)+'px,'+
+      (cropGeom.x+cropGeom.w)+'px '+(cropGeom.y+cropGeom.h)+'px,'+
+      (cropGeom.x+cropGeom.w)+'px '+cropGeom.y+'px,'+
+      cropGeom.x+'px '+cropGeom.y+'px)';
+  }
+  (function cropDrag(){
+    const stage=$('cropStage'); let mode=null, corner=null, sx=0, sy=0, start=null;
+    const MIN=44;
+    const pt=e=>{ const t=e.touches?e.touches[0]:e; return {x:t.clientX, y:t.clientY}; };
+    function down(e){
+      if(!cropGeom) return;
+      const h=e.target.closest('.crop-box i');
+      const inBox=e.target.closest('.crop-box');
+      if(!h && !inBox) return;
+      mode = h ? 'resize' : 'move'; corner = h ? h.dataset.c : null;
+      const p=pt(e); sx=p.x; sy=p.y; start={...cropGeom};
+      e.preventDefault();
+    }
+    function move(e){
+      if(!mode) return;
+      const p=pt(e), dx=p.x-sx, dy=p.y-sy;
+      const W=stage.clientWidth, H=stage.clientHeight;
+      let g={...start};
+      if(mode==='move'){
+        g.x=Math.max(0, Math.min(start.x+dx, W-start.w));
+        g.y=Math.max(0, Math.min(start.y+dy, H-start.h));
+      } else {
+        if(corner.includes('w')){ const nx=Math.max(0,Math.min(start.x+dx, start.x+start.w-MIN)); g.w=start.w+(start.x-nx); g.x=nx; }
+        if(corner.includes('e')){ g.w=Math.max(MIN, Math.min(start.w+dx, W-start.x)); }
+        if(corner.includes('n')){ const ny=Math.max(0,Math.min(start.y+dy, start.y+start.h-MIN)); g.h=start.h+(start.y-ny); g.y=ny; }
+        if(corner.includes('s')){ g.h=Math.max(MIN, Math.min(start.h+dy, H-start.y)); }
+      }
+      cropGeom=g; drawCrop(); e.preventDefault();
+    }
+    const up=()=>{ mode=null; };
+    stage.addEventListener('pointerdown',down);
+    window.addEventListener('pointermove',move,{passive:false});
+    window.addEventListener('pointerup',up);
+    window.addEventListener('pointercancel',up);
+  })();
+  function applyCrop(){
+    const stage=$('cropStage'), W=stage.clientWidth, H=stage.clientHeight;
+    const img=new Image();
+    img.onload=()=>{
+      const sx=img.naturalWidth/W, sy=img.naturalHeight/H;
+      let cw=Math.round(cropGeom.w*sx), ch=Math.round(cropGeom.h*sy);
+      const cx=Math.round(cropGeom.x*sx), cy=Math.round(cropGeom.y*sy);
+      // the kept piece is re-fitted to 1200px, so cropping raises detail, never lowers it
+      const max=1200; let ow=cw, oh=ch;
+      if(ow>max||oh>max){ const s=Math.min(max/ow,max/oh); ow=Math.round(ow*s); oh=Math.round(oh*s); }
+      const c=document.createElement('canvas'); c.width=ow; c.height=oh;
+      c.getContext('2d').drawImage(img, cx, cy, cw, ch, 0, 0, ow, oh);
+      pendingImg=c.toDataURL('image/jpeg',0.82);
+      $('previewImg').src=pendingImg;
+      closeSheet('cropper');
+      showToast('✓ Recortado');
+    };
+    img.src=pendingRaw;
+  }
+  $('cropBtn').onclick    = openCropper;
+  $('cropCancel').onclick = ()=> closeSheet('cropper');
+  $('cropDone').onclick   = applyCrop;
+
+  /* ---- Mis finders: each person builds their own row ---- */
+  const EMOJIS = ['🏦','🏡','✍️','👪','💳','📅','🩺','🏠','🪪','📌','⚖️','📜','🚗','💼',
+                  '🎓','🐾','✈️','🧾','🔧','💡','📞','🛡️','⭐','❤️','🌱','🍽️','👶','🎁'];
+  let pickedEmoji = EMOJIS[0];
+  function drawEmojis(){
+    const g=$('emojiGrid'); g.innerHTML='';
+    EMOJIS.forEach(e=>{
+      const b=document.createElement('button'); b.type='button'; b.textContent=e;
+      if(e===pickedEmoji) b.classList.add('active');
+      b.onclick=()=>{ pickedEmoji=e; drawEmojis(); };
+      g.appendChild(b);
+    });
+  }
+  const finderUse = k => docs.filter(d=>(d.finders||[]).includes(k)).length;
+  function drawMine(){
+    const wrap=$('mineList'); wrap.innerHTML='';
+    FINDERS.forEach(f=>{
+      const row=document.createElement('div'); row.className='row';
+      const n=document.createElement('button'); n.type='button'; n.className='nm';
+      const used=finderUse(f.key);
+      n.textContent=f.emoji+' '+f.key;
+      n.setAttribute('aria-label','Cambiarle el nombre a '+f.key);
+      if(used){ const s=document.createElement('span'); s.className='used';
+        s.textContent=used===1?'1 documento lo usa':used+' documentos lo usan'; n.appendChild(s); }
+      n.onclick=()=>editFinder(f.key, row);
+      const rm=document.createElement('button'); rm.type='button'; rm.className='rm';
+      rm.textContent='×'; rm.setAttribute('aria-label','Quitar '+f.key);
+      rm.onclick=()=>removeFinder(f.key);
+      row.appendChild(n); row.appendChild(rm); wrap.appendChild(row);
+    });
+  }
+  // Tap a finder to rename it — the ten it comes with included. The documents
+  // already filed under the old name follow it, so nothing is orphaned.
+  function editFinder(key, row){
+    const f=FMAP[key]; if(!f) return;
+    row.innerHTML='';
+    const inp=document.createElement('input'); inp.type='text'; inp.className='rename';
+    inp.value=f.key; inp.maxLength=16;
+    const ok=document.createElement('button'); ok.type='button'; ok.className='rm ok'; ok.textContent='✓';
+    ok.setAttribute('aria-label','Guardar el nombre');
+    const done=()=>{
+      const name=inp.value.trim();
+      if(!name || name===f.key){ drawMine(); return; }
+      if(FINDERS.some(x=>x.key!==f.key && x.key.toLowerCase()===name.toLowerCase())){
+        showToast('Ya tienes uno con ese nombre'); drawMine(); return; }
+      renameFinder(f.key, name);
+    };
+    ok.onclick=done;
+    inp.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); done(); }
+      if(e.key==='Escape') drawMine(); });
+    row.appendChild(inp); row.appendChild(ok);
+    inp.focus(); inp.select();
+  }
+  async function renameFinder(oldKey, newKey){
+    setFinders(FINDERS.map(f => f.key===oldKey ? {key:newKey, emoji:f.emoji} : f));
+    let touched=0;
+    for(const d of docs){
+      if((d.finders||[]).includes(oldKey)){
+        d.finders = d.finders.map(k => k===oldKey ? newKey : k);
+        await putDoc(d); touched++;
+      }
+    }
+    if(touched) refresh();
+    drawMine();
+    showToast('✓ Ahora se llama '+newKey);
+  }
+  function openMisFinders(){
+    pickedEmoji=EMOJIS[0]; $('finderName').value='';
+    drawEmojis(); drawMine(); openSheet('misFinders');
+  }
+  function createFinder(){
+    const name=$('finderName').value.trim();
+    if(!name){ showToast('Ponle un nombre'); $('finderName').focus(); return; }
+    if(FINDERS.some(f=>f.key.toLowerCase()===name.toLowerCase())){ showToast('Ya tienes uno con ese nombre'); return; }
+    setFinders(FINDERS.concat([{key:name, emoji:pickedEmoji}]));
+    $('finderName').value=''; pickedEmoji=EMOJIS[0];
+    drawEmojis(); drawMine(); showToast('✓ '+name+' está listo');
+  }
+  // Removing a finder never touches a document: it keeps its label, just plain.
+  function removeFinder(key){
+    const used=finderUse(key);
+    const msg = used
+      ? 'Quitar «'+key+'» de la fila.\n\nLos '+used+' documentos que lo usan se quedan como están, y lo seguirás viendo en ellos.'
+      : 'Quitar «'+key+'» de la fila.';
+    if(!confirm(msg)) return;
+    setFinders(FINDERS.filter(f=>f.key!==key));
+    drawMine();
+  }
+  $('finderCreate').onclick = createFinder;
+  $('finderName').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); createFinder(); } });
+  $('finderDone').onclick = ()=> closeSheet('misFinders');
   ['naming','viewer','archivar'].forEach(id=> $(id).addEventListener('click', e=>{ if(e.target.id===id) closeSheet(id); }));
   let toastTimer;
   function showToast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),1900); }
