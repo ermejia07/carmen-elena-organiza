@@ -159,9 +159,17 @@
   .mine .row{ display:flex;align-items:center;gap:10px; background:var(--sand-2);
     border:1px solid var(--line);border-radius:13px;padding:10px 12px;
     touch-action:pan-y;transition:transform .14s ease, box-shadow .14s ease; }
-  .mine .row.lifted{ box-shadow:var(--shadow-lift);transform:scale(1.03);
+  /* the little hop is the moment it says "I have it, now move me" */
+  .mine .row.lifted{ box-shadow:var(--shadow-lift);
     background:var(--sand);border-color:var(--teal);position:relative;z-index:3;
-    transition:none;touch-action:none; }
+    transition:none;touch-action:none;
+    transform:translateY(-5px) scale(1.03);
+    animation:pop .34s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes pop{
+    0%   {transform:translateY(0) scale(1)}
+    45%  {transform:translateY(-11px) scale(1.05)}
+    100% {transform:translateY(-5px) scale(1.03)}
+  }
   .mine .row.shifted{transform:translateY(var(--sh,0px))}
   .mine .grip{ flex:none;color:var(--ink-soft);font-size:15px;line-height:1;cursor:grab;
     padding:2px 2px 2px 0;user-select:none }
@@ -1336,7 +1344,8 @@
         if(!dragging){ if(hold && Math.abs(e.clientY-startY)>0) {} return; }
         e.preventDefault();
         const dy=e.clientY-startY;
-        row.style.transform='translateY('+dy+'px) scale(1.03)';
+        // -5 keeps it sitting where the hop left it, so it does not snap back down
+        row.style.transform='translateY('+(dy-5)+'px) scale(1.03)';
         let to=Math.max(0, Math.min(rows.length-1, from + Math.round(dy/h)));
         rows.forEach((r,i)=>{
           if(r===row) return;
