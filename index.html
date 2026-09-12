@@ -157,7 +157,14 @@
   .emoji-grid button.active{background:var(--fill);border-color:var(--on-fill)}
   .mine{display:flex;flex-direction:column;gap:8px;margin-top:6px}
   .mine .row{ display:flex;align-items:center;gap:10px; background:var(--sand-2);
-    border:1px solid var(--line);border-radius:13px;padding:10px 12px; }
+    border:1px solid var(--line);border-radius:13px;padding:10px 12px;
+    touch-action:pan-y;transition:transform .14s ease, box-shadow .14s ease; }
+  .mine .row.lifted{ box-shadow:var(--shadow-lift);transform:scale(1.03);
+    background:var(--sand);border-color:var(--teal);position:relative;z-index:3;
+    transition:none;touch-action:none; }
+  .mine .row.shifted{transform:translateY(var(--sh,0px))}
+  .mine .grip{ flex:none;color:var(--ink-soft);font-size:15px;line-height:1;cursor:grab;
+    padding:2px 2px 2px 0;user-select:none }
   .mine .row .nm{ flex:1;font-size:15px;font-weight:600;text-align:left;
     appearance:none;border:none;background:transparent;cursor:pointer;
     color:var(--ink);font-family:inherit;padding:0; }
@@ -562,7 +569,7 @@
     <label class="fld" for="finderName">¿Cómo se llama?</label>
     <input type="text" id="finderName" placeholder="Ej: Reclamo BAC" autocomplete="off" maxlength="16">
     <button class="btn btn-primary" id="finderCreate" style="width:100%;margin-top:12px">Crear</button>
-    <label class="fld" style="margin-top:18px">Los que ya tienes — tócalo para cambiarle el nombre</label>
+    <label class="fld" style="margin-top:18px">Los que ya tienes — tócalo para cambiarle el nombre, o mantenlo presionado para moverlo</label>
     <div class="mine" id="mineList"></div>
     <div class="btn-row">
       <button class="btn btn-ghost" id="finderDone" style="width:100%">Listo</button>
@@ -1285,7 +1292,9 @@
   function drawMine(){
     const wrap=$('mineList'); wrap.innerHTML='';
     FINDERS.forEach(f=>{
-      const row=document.createElement('div'); row.className='row';
+      const row=document.createElement('div'); row.className='row'; row.dataset.key=f.key;
+      const grip=document.createElement('span'); grip.className='grip'; grip.textContent='⠿';
+      grip.setAttribute('aria-hidden','true');
       const n=document.createElement('button'); n.type='button'; n.className='nm';
       const used=finderUse(f.key);
       n.textContent=f.emoji+' '+f.key;
@@ -1296,7 +1305,62 @@
       const rm=document.createElement('button'); rm.type='button'; rm.className='rm';
       rm.textContent='×'; rm.setAttribute('aria-label','Quitar '+f.key);
       rm.onclick=()=>removeFinder(f.key);
-      row.appendChild(n); row.appendChild(rm); wrap.appendChild(row);
+      row.appendChild(grip); row.appendChild(n); row.appendChild(rm); wrap.appendChild(row);
+    });
+    armReorder();
+  }
+
+  /* ---- Hold a finder and drag it to move it in the row ---- */
+  function armReorder(){
+    const wrap=$('mineList');
+    wrap.querySelectorAll('.row').forEach(row=>{
+      let hold=null, dragging=false, startY=0, from=0, rows=[], h=0, moved=false;
+      const cleanup=()=>{
+        clearTimeout(hold); hold=null;
+        if(!dragging) return;
+        dragging=false;
+        rows.forEach(r=>{ r.classList.remove('lifted','shifted'); r.style.removeProperty('--sh'); r.style.transform=''; });
+      };
+      row.addEventListener('pointerdown', e=>{
+        if(e.target.closest('.rm')) return;
+        moved=false;
+        hold=setTimeout(()=>{
+          dragging=true; moved=true;
+          rows=Array.from(wrap.querySelectorAll('.row'));
+          from=rows.indexOf(row); h=row.offsetHeight+8;      // row + gap
+          startY=e.clientY; row.classList.add('lifted');
+          if(navigator.vibrate) try{ navigator.vibrate(12); }catch(_){}
+        }, 380);
+      });
+      row.addEventListener('pointermove', e=>{
+        if(!dragging){ if(hold && Math.abs(e.clientY-startY)>0) {} return; }
+        e.preventDefault();
+        const dy=e.clientY-startY;
+        row.style.transform='translateY('+dy+'px) scale(1.03)';
+        let to=Math.max(0, Math.min(rows.length-1, from + Math.round(dy/h)));
+        rows.forEach((r,i)=>{
+          if(r===row) return;
+          let shift=0;
+          if(from<to && i>from && i<=to) shift=-h;
+          else if(from>to && i<from && i>=to) shift=h;
+          r.style.setProperty('--sh', shift+'px'); r.classList.add('shifted');
+        });
+        row.dataset.to=to;
+      });
+      const finish=()=>{
+        if(!dragging){ clearTimeout(hold); hold=null; return; }
+        const to=Number(row.dataset.to);
+        cleanup();
+        if(!isNaN(to) && to!==from){
+          const list=FINDERS.slice(); const [moving]=list.splice(from,1); list.splice(to,0,moving);
+          setFinders(list); drawMine(); showToast('✓ Orden guardado');
+        }
+      };
+      row.addEventListener('pointerup', finish);
+      row.addEventListener('pointercancel', cleanup);
+      row.addEventListener('pointerleave', e=>{ if(!dragging) { clearTimeout(hold); hold=null; } });
+      // a hold that turned into a drag must not also trigger the rename
+      row.querySelector('.nm').addEventListener('click', e=>{ if(moved){ e.preventDefault(); e.stopPropagation(); moved=false; } }, true);
     });
   }
   // Tap a finder to rename it — the ten it comes with included. The documents
